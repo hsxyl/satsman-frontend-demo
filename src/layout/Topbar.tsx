@@ -6,7 +6,7 @@ import { AccountButton } from '../components/AccountButton'
 import ConnectButton from '../components/ConnectButton'
 import { Button, Skeleton } from 'antd'
 import { Link } from 'react-router-dom'
-import { useSiwbIdentity } from 'ic-siwb-lasereyes-connector'
+import { useSiwbIdentity } from 'oct-ic-siwb-lasereyes-connector'
 
 export function Topbar() {
 	const { address } = useLaserEyes()

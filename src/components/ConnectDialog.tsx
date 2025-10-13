@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, Modal, Spin, Typography } from "antd";
-import { useSiwbIdentity } from "ic-siwb-lasereyes-connector";
+import { useSiwbIdentity } from "oct-ic-siwb-lasereyes-connector";
 import {
   ContentType,
   NetworkType,

@@ -21,7 +21,7 @@ import {
   useUserInfoOfLaunch,
 } from "hooks/use-pool";
 import { useLoginUserBtcUtxo, useWalletBtcUtxos } from "hooks/use-utxos";
-import { useSiwbIdentity } from "ic-siwb-lasereyes-connector";
+import { useSiwbIdentity } from "oct-ic-siwb-lasereyes-connector";
 import { use, useEffect, useMemo, useState } from "react";
 import { convertUtxo } from "utils";
 import { addLiquidityTx } from "utils/tx-helper/addLp";
@@ -29,13 +29,10 @@ import { topupTx } from "utils/tx-helper/topup";
 import { withdrawTx } from "utils/tx-helper/withdraw";
 
 export function Launch() {
-  // get pool_address from url
   const urlParams = new URLSearchParams(window.location.search);
   const pool_address =
     urlParams.get("pool_address") ||
     window.location.pathname.split("/launch/")[1];
-  // const { address, paymentAddress, signPsbt, publicKey, paymentPublicKey } =
-  //   useLaserEyes();
 
   console.log({ pool_address });
   const {
