@@ -15,7 +15,7 @@ export default function ConnectButton() {
   const { identity, clear } = useSiwbIdentity();
 
   const handleClick = async () => {
-	clear();
+    clear();
     setConnectWalletModalOpen(true);
   };
 

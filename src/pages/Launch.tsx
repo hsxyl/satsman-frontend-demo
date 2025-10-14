@@ -606,6 +606,13 @@ function LaunchInfo({
         <p>Total Raised Btc: {last_block_state?.total_raised_btc_balances}</p>
         <p>Total Distributed Rune: {last_block_state?.total_minted_rune}</p>
       </div>
+      <Divider />
+      <h3 className="text-lg font-semibold">Rune Info</h3>
+      {
+        status_str === "Etching" && (
+          <EtchProcess pool_business_state={pool_business_state!} /> 
+        )
+      }
     </div>
   );
 }
@@ -753,107 +760,88 @@ type FieldType = {
 //   );
 // }
 
-// function EtchProcess({
-//   pool_business_state,
-// }: {
-//   pool_business_state: PoolBusinessStateView;
-// }) {
-//   const { identity } = useSiwbIdentity();
-//   const [finalizing, setFinalizing] = useState<boolean>(false);
+function EtchProcess({
+  pool_business_state,
+}: {
+  pool_business_state: PoolBusinessStateView;
+}) {
+  const { identity } = useSiwbIdentity();
+  const [finalizing, setFinalizing] = useState<boolean>(false);
 
-//   const commit_txid = pool_business_state.etch_commit_tx[0] || undefined;
+  const commit_txid = pool_business_state.etch_commit_tx[0] || undefined;
 
-//   const {
-//     data: etchingRequest,
-//     isLoading,
-//     isError,
-//     error,
-//     refetch,
-//     isFetching,
-//   } = useEtchingRequest(commit_txid);
+  const {
+    data: etchingRequest,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useEtchingRequest(commit_txid);
 
-//   console.log({ etchingRequest });
+  console.log({ etchingRequest });
 
-//   if (!commit_txid) {
-//     return <div>No Etch Process</div>;
-//   }
+  if (!commit_txid) {
+    return <div>No Etch Process</div>;
+  }
 
-//   if (isLoading) {
-//     return <Skeleton />;
-//   }
+  if (isLoading) {
+    return <Skeleton />;
+  }
 
-//   if (isError) {
-//     return <div>Error loading etch process: {error.message}</div>;
-//   }
+  if (isError) {
+    return <div>Error loading etch process: {error.message}</div>;
+  }
 
-//   if (!etchingRequest) {
-//     return <div>No Etching Request Found</div>;
-//   }
+  if (!etchingRequest) {
+    return <div>No Etching Request Found</div>;
+  }
 
-//   if (!identity) {
-//     return <div>No Siwb Identity Found</div>;
-//   }
+  if (!identity) {
+    return <div>No Siwb Identity Found</div>;
+  }
 
-//   const status = Object.keys(etchingRequest![0]!.status)[0];
-//   const isFinal = status === "Final";
-//   const poolStatusStr = pool_status_str(pool_business_state.status);
+  const status = Object.keys(etchingRequest![0]!.status)[0];
+  const isFinal = status === "Final";
+  const poolStatusStr = pool_status_str(pool_business_state.status);
 
-//   return (
-//     <div className="mt-10 text-sm font-medium text-gray-700 flex flex-col items-start">
-//       <h2 className="text-lg font-semibold">Etching in Progress</h2>
-//       <p>Rune Name: {etchingRequest![0]!.etching_args.rune_name}</p>
-//       <p>Premine: {etchingRequest![0]!.etching_args.premine}</p>
-//       <p>Commit ID: {commit_txid}</p>
-//       <p>Reveal ID: {etchingRequest![0]!.reveal_txid}</p>
-//       <p className="flex">
-//         Status:{" "}
-//         <span
-//           className={isFinal ? "text-green-500 ml-1" : "text-yellow-500 ml-1"}
-//         >
-//           {Object.keys(etchingRequest![0]!.status)[0]}
-//         </span>
-//       </p>
-//       <p>
-//         Create At:{" "}
-//         {new Date(
-//           Number(etchingRequest![0]!.time_at / BigInt(1000000))
-//         ).toLocaleString()}
-//       </p>
+  return (
+    <div className="mt-2 text-sm font-medium text-gray-700 flex flex-col items-start">
+      <h2 className="text-lg font-bold">Etching in Progress</h2>
+      <p>Rune Name: {etchingRequest![0]!.etching_args.rune_name}</p>
+      <p>Premine: {etchingRequest![0]!.etching_args.premine}</p>
+      <p>Commit ID: {commit_txid}</p>
+      <p>Reveal ID: {etchingRequest![0]!.reveal_txid}</p>
+      <p className="flex">
+        Status:{" "}
+        <span
+          className={isFinal ? "text-green-500 ml-1" : "text-yellow-500 ml-1"}
+        >
+          {Object.keys(etchingRequest![0]!.status)[0]}
+        </span>
+      </p>
+      <p>
+        Create At:{" "}
+        {new Date(
+          Number(etchingRequest![0]!.time_at / BigInt(1000000))
+        ).toLocaleString()}
+      </p>
 
-//       {isFinal ? (
-//         <Button
-//           disabled={poolStatusStr !== "Etching"}
-//           loading={finalizing}
-//           className="mt-10"
-//           type="primary"
-//           onClick={() => {
-//             setFinalizing(true);
-//             satsmanActorWithIdentity(identity!)
-//               .finalize_etching(pool_business_state.pool_address)
-//               .then(() => {})
-//               .catch((e) => {
-//                 alert("Finalize Etch Failed: " + e.message);
-//                 console.error(e);
-//               })
-//               .finally(() => {
-//                 window.location.reload();
-//               });
-//           }}
-//         >
-//           {poolStatusStr === "Etching"
-//             ? "Finalize Etching"
-//             : "Already Finished Etch"}
-//         </Button>
-//       ) : (
-//         <Button
-//           loading={isFetching}
-//           onClick={() => {
-//             refetch();
-//           }}
-//         >
-//           Sync
-//         </Button>
-//       )}
-//     </div>
-//   );
-// }
+      {isFinal ? (
+       <Button>
+        Etch Finalized!
+       </Button>
+
+      ) : (
+        <Button
+          loading={isFetching}
+          onClick={() => {
+            refetch();
+          }}
+        >
+          Sync
+        </Button>
+      )}
+    </div>
+  );
+}

@@ -9,6 +9,12 @@ import { LaserEyesProvider, TESTNET4 } from "@omnisat/lasereyes";
 import { SiwbIdentityProvider } from "oct-ic-siwb-lasereyes-connector";
 import type { _SERVICE as siwbService } from "./canister/siwb/ic_siwb_provider.d.ts";
 import { idlFactory as siwbIdl } from "./canister/siwb/ic_siwb_provider.idl";
+import { ReeProvider } from "@omnity/ree-client-ts-sdk";
+import { idlFactory } from "canister/satsman/service.did";
+import {
+  SATSMAN_CANISTER_ID,
+  SATSMAN_EXCHANGE_ID,
+} from "canister/satsman/actor";
 
 const MAX_RETRIES = 1;
 const queryClient = new QueryClient({
@@ -27,13 +33,23 @@ if (container) {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <LaserEyesProvider config={{ network: TESTNET4 }}>
-          <SiwbIdentityProvider<siwbService>
-            canisterId={"stxih-wyaaa-aaaah-aq2la-cai"}
-            idlFactory={siwbIdl}
-            httpAgentOptions={{ host: "https://icp0.io" }} // use only in local canister
+          <ReeProvider
+            config={{
+              network: "testnet",
+              maestroApiKey: "f3nf6OqNEoWy7PtdtXqzP0SWyJZxtWYf",
+              exchangeIdlFactory: idlFactory,
+              exchangeId: SATSMAN_EXCHANGE_ID,
+              exchangeCanisterId: SATSMAN_CANISTER_ID,
+            }}
           >
+            <SiwbIdentityProvider<siwbService>
+              canisterId={"stxih-wyaaa-aaaah-aq2la-cai"}
+              idlFactory={siwbIdl}
+              httpAgentOptions={{ host: "https://icp0.io" }} // use only in local canister
+            >
               <App />
-          </SiwbIdentityProvider>
+            </SiwbIdentityProvider>
+          </ReeProvider>
         </LaserEyesProvider>
       </QueryClientProvider>
     </StrictMode>

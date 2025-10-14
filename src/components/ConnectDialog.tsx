@@ -12,6 +12,7 @@ import {
   XVERSE,
 } from "@omnisat/lasereyes";
 import { atom, useAtom } from "jotai";
+import { useRee } from "@omnity/ree-client-ts-sdk";
 
 export const connectWalletModalOpenAtom = atom(false);
 
@@ -19,6 +20,7 @@ export default function ConnectWalletModal() {
   const [connectWalletModalOpen, setConnectWalletModalOpen] = useAtom(
     connectWalletModalOpenAtom
   );
+  const { updateWallet } = useRee();
   const p = useLaserEyes();
 
   const {
@@ -185,6 +187,10 @@ export default function ConnectWalletModal() {
           onClick={async () => {
             setManually(true);
             await setLaserEyes(p, UNISAT);
+            updateWallet({
+              address: p.address, 
+              paymentAddress: p.paymentAddress
+            })
           }}
           disabled={loading}
           block

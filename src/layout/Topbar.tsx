@@ -8,6 +8,7 @@ import { Button, Skeleton } from 'antd'
 import { Link } from 'react-router-dom'
 // @ts-ignore
 import { useSiwbIdentity } from 'oct-ic-siwb-lasereyes-connector'
+import { useRee } from '@omnity/ree-client-ts-sdk'
 
 export function Topbar() {
 	const { address } = useLaserEyes()

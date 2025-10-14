@@ -1,4 +1,5 @@
 import { useLaserEyes } from "@omnisat/lasereyes";
+import { useRee } from "@omnity/ree-client-ts-sdk";
 import { Button, Form, FormProps } from "antd";
 import { convertMaestroUtxo } from "api/maestro";
 import { indexerActor } from "canister/runes-indexer/actor";
@@ -24,10 +25,15 @@ export function CreateLaunch() {
     useState<boolean>(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [calling, setCalling] = useState<boolean>(false);
-  const { address, paymentAddress, signPsbt, publicKey, paymentPublicKey } =
-    useLaserEyes();
-  const { data: btcUtxos, isLoading: isLoadingUtxo } = useLoginUserBtcUtxo();
+
+  //   const { data: btcUtxos, isLoading: isLoadingUtxo } = useLoginUserBtcUtxo();
   const { data: latestBlockHeight } = useLatestBlockHeight();
+  const { signPsbt, address, paymentAddress } = useLaserEyes();
+  const { client, updateWallet, createTransaction } =
+    useRee();
+
+  console.log({ client, address, paymentAddress });
+
   console.log("latestBlockHeight", latestBlockHeight);
 
   return (
@@ -35,7 +41,7 @@ export function CreateLaunch() {
       <h1 className="text-2xl my-4">Create Launch</h1>
       <div>
         <div className="mb-4 flex flex-row items-center">
-          <p className="mr-4">Pool Name:</p>
+          <p className="mr-4">Rune Name:</p>
           <input
             value={runeName}
             onChange={(e) => {
@@ -126,46 +132,67 @@ export function CreateLaunch() {
           onClick={async () => {
             setCalling(true);
             try {
-              try {
-                if (!address) {
-                  alert("Please connect your wallet first.");
-                  return;
-                }
-                let create_launch_state =
-                  await satsmanActor.get_create_launch_info();
-                createTx({
-                  userBtcUtxos: btcUtxos!.map((e) =>
-                    convertMaestroUtxo(e, paymentPublicKey)
-                  ),
-                  poolBtcUtxo: convertUtxo(
-                    create_launch_state.utxo,
-                    create_launch_state.key
-                  ),
-                  paymentAddress: paymentAddress!,
-                  poolAddress: create_launch_state.register_pool_address,
-                  createFee: create_launch_state.create_pool_fee,
-                  nonce: create_launch_state.nonce,
-                  signPsbt: signPsbt,
-                  launch_rune_etching_args: {
-                    rune_name: runeName,
+              if (!address) {
+                alert("Please connect your wallet first.");
+                return;
+              }
+              let create_launch_state =
+                await satsmanActor.get_create_launch_info();
+
+            updateWallet({
+                address: address,
+                paymentAddress: paymentAddress!,
+            })
+
+              const tx = await createTransaction();
+              let poolUtxo = convertUtxo(
+                create_launch_state.utxo,
+                create_launch_state.key
+              );
+              tx.addIntention({
+                poolAddress: create_launch_state.register_pool_address,
+                poolUtxos: [
+                  {
+                    txid: poolUtxo.txid,
+                    vout: poolUtxo.vout,
+                    satoshis: poolUtxo.satoshis.toString(),
+                    runes: poolUtxo.runes,
+                    address: poolUtxo.address,
+                    scriptPk: poolUtxo.scriptPk,
                   },
+                ],
+                action: "create_launch",
+                inputCoins: [
+                  {
+                    from: paymentAddress,
+                    coin: {
+                      id: "0:0",
+                      value: create_launch_state.create_pool_fee,
+                    },
+                  },
+                ],
+                outputCoins: [],
+                actionParams: JSON.stringify({
                   launch_args: {
                     start_height: Number(startHeight),
                     raising_target_sats: Number(raisingTarget) * 1000,
-                    social_info: {}
+                    social_info: {},
                   },
-                }).then((e) => {
-                  console.log("invoke success and txid ", e);
-                  alert("Create Launch Success: " + e);
+                  launch_rune_etching_args: {
+                    rune_name: runeName,
+                  },
+                }),
+                nonce: create_launch_state.nonce,
+              });
 
-                  // to launch page
-                  window.location.assign(`/`);
-                  
-                });
-              } catch (e) {
-                console.error(e);
-                alert("Create Launch failed: " + (e as Error).message);
-              }
+              const { psbt } = await tx.build();
+              const res = await signPsbt(psbt.toBase64());
+              const signedPsbtHex = res!.signedPsbtHex!;
+              const txid = await tx.send(signedPsbtHex);
+
+              console.log("invoke success and txid ", txid);
+              alert("Create Launch Success: " + txid);
+              window.location.assign(`/`);
             } catch (e) {
               console.error(e);
               alert("Create Launch failed: " + (e as Error).message);
