@@ -1,19 +1,18 @@
 export const idlFactory = ({ IDL }) => {
   const LaunchRaisedBtcShare = IDL.Record({
     'referral_bonus_per_mille' : IDL.Nat16,
-    'referrer_bonus_per_mille' : IDL.Nat16,
     'exchange_fee_per_mille' : IDL.Nat16,
     'lp_per_mille' : IDL.Nat16,
-    'launch_per_mille' : IDL.Nat16,
   });
+  const Result = IDL.Variant({ 'Ok' : IDL.Bool, 'Err' : IDL.Text });
   const LogoParams = IDL.Record({
     'content_type' : IDL.Text,
     'content_base64' : IDL.Text,
   });
   const LaunchRuneEtchingArgs = IDL.Record({
-    'rune_logo' : LogoParams,
+    'rune_logo' : IDL.Opt(LogoParams),
     'rune_name' : IDL.Text,
-    'rune_symbol' : IDL.Text,
+    'rune_symbol' : IDL.Opt(IDL.Text),
   });
   const ExchangeError = IDL.Variant({
     'InvalidArgs' : IDL.Text,
@@ -21,7 +20,7 @@ export const idlFactory = ({ IDL }) => {
     'ExchangeStateNotInitialized' : IDL.Null,
     'CustomError' : IDL.Text,
   });
-  const Result = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ExchangeError });
+  const Result_1 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ExchangeError });
   const CoinBalance = IDL.Record({ 'id' : IDL.Text, 'value' : IDL.Nat });
   const InputCoin = IDL.Record({ 'coin' : CoinBalance, 'from' : IDL.Text });
   const OutputCoin = IDL.Record({ 'to' : IDL.Text, 'coin' : CoinBalance });
@@ -54,9 +53,9 @@ export const idlFactory = ({ IDL }) => {
     'intention_index' : IDL.Nat32,
     'psbt_hex' : IDL.Text,
   });
-  const Result_1 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : ExchangeError });
+  const Result_2 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const Account = IDL.Record({
+    'withdraw_txid' : IDL.Opt(IDL.Text),
     'total_contributed_btc' : IDL.Nat64,
     'btc_balance' : IDL.Nat64,
     'referral_reward' : IDL.Nat64,
@@ -77,15 +76,22 @@ export const idlFactory = ({ IDL }) => {
     'utxo' : Utxo,
     'register_pool_address' : IDL.Text,
     'nonce' : IDL.Nat64,
+    'min_start_block_height' : IDL.Nat32,
   });
   const ExchangeState = IDL.Record({
     'rune_premine_amount' : IDL.Nat,
+    'raising_target_max' : IDL.Nat64,
+    'raising_target_min' : IDL.Nat64,
     'minimum_top_up_sats' : IDL.Nat64,
+    'active_launch_pool_address_set' : IDL.Vec(IDL.Text),
     'uuid' : IDL.Nat64,
+    'launch_duration_blocks' : IDL.Nat32,
     'register_pool_address' : IDL.Opt(IDL.Text),
     'rune_divisibility' : IDL.Nat8,
     'user_referral_codes' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+    'launch_rune_reverse_for_lp_percent' : IDL.Nat8,
     'is_task_running' : IDL.Bool,
+    'launch_rune_percent' : IDL.Nat8,
     'create_fee_sats' : IDL.Nat64,
     'launch_raised_btc_share' : LaunchRaisedBtcShare,
     'code_of_users' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
@@ -96,31 +102,45 @@ export const idlFactory = ({ IDL }) => {
     'AddedLp' : IDL.Null,
     'LaunchSuccess' : IDL.Null,
     'AddingLp' : IDL.Null,
-    'Etched' : IDL.Null,
+    'EtchFailed' : IDL.Text,
     'Processing' : IDL.Null,
     'Etching' : IDL.Null,
     'LaunchFailed' : IDL.Null,
   });
+  const SocialInfo = IDL.Record({
+    'twitter' : IDL.Opt(IDL.Text),
+    'website' : IDL.Opt(IDL.Text),
+    'discord' : IDL.Opt(IDL.Text),
+    'telegram' : IDL.Opt(IDL.Text),
+    'github' : IDL.Opt(IDL.Text),
+  });
+  const LaunchArgs = IDL.Record({
+    'start_height' : IDL.Nat32,
+    'social_info' : SocialInfo,
+    'banner' : IDL.Opt(IDL.Text),
+    'description' : IDL.Opt(IDL.Text),
+    'raising_target_sats' : IDL.Nat64,
+  });
   const PoolBusinessStateView = IDL.Record({
     'status' : PoolStatus,
-    'website_url' : IDL.Opt(IDL.Text),
     'creator' : IDL.Text,
-    'launch_rune_etching_args' : IDL.Opt(LaunchRuneEtchingArgs),
+    'start_height' : IDL.Nat32,
+    'launch_rune_etching_args' : LaunchRuneEtchingArgs,
     'reveal_tx' : IDL.Opt(IDL.Text),
-    'twitter_url' : IDL.Opt(IDL.Text),
+    'end_height' : IDL.Nat32,
     'pubkey' : IDL.Text,
     'btc_amount_for_lp' : IDL.Nat,
     'raising_target' : IDL.Nat64,
     'rune_premine' : IDL.Opt(IDL.Nat),
     'key_path' : IDL.Text,
     'highest_block_states' : IDL.Opt(BlockState),
-    'end_block' : IDL.Opt(IDL.Nat32),
     'rune_amount_for_lp' : IDL.Opt(IDL.Nat),
+    'launch_args' : LaunchArgs,
     'rune_amount_for_launch' : IDL.Opt(IDL.Nat),
     'pool_address' : IDL.Text,
     'launch_raised_btc_share' : LaunchRaisedBtcShare,
+    'add_lp_txid' : IDL.Opt(IDL.Text),
     'rune_id' : IDL.Opt(IDL.Text),
-    'start_block' : IDL.Opt(IDL.Nat32),
     'etch_commit_tx' : IDL.Opt(IDL.Text),
   });
   const GetPoolInfoArgs = IDL.Record({ 'pool_address' : IDL.Text });
@@ -179,14 +199,15 @@ export const idlFactory = ({ IDL }) => {
     'txid' : IDL.Text,
     'reason_code' : IDL.Text,
   });
+  const Result_4 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : ExchangeError });
   return IDL.Service({
+    'check_rune_name_available' : IDL.Func([IDL.Text], [Result], ['query']),
     'etching_for_launch' : IDL.Func(
         [IDL.Text, LaunchRuneEtchingArgs],
-        [Result],
+        [Result_1],
         [],
       ),
-    'execute_tx' : IDL.Func([ExecuteTxArgs], [Result_1], []),
-    'finalize_etching' : IDL.Func([IDL.Text], [Result_2], []),
+    'execute_tx' : IDL.Func([ExecuteTxArgs], [Result_2], []),
     'generate_referral_code' : IDL.Func([IDL.Text], [IDL.Text], []),
     'get_block_state' : IDL.Func([IDL.Text], [IDL.Vec(BlockState)], ['query']),
     'get_create_launch_info' : IDL.Func([], [CreateLaunchState], ['query']),
@@ -224,29 +245,34 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'new_block' : IDL.Func([NewBlockInfo], [Result_3], []),
+    'query_tx_event' : IDL.Func([IDL.Text], [IDL.Opt(Event)], ['query']),
     'reset_blocks' : IDL.Func([], [Result_3], []),
     'rollback_tx' : IDL.Func([RollbackTxArgs], [Result_3], []),
     'set_user_referral_code' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text],
-        [Result_2],
-        [],
-      ),
-    'start_launch' : IDL.Func(
-        [IDL.Text, IDL.Nat32, IDL.Nat32, IDL.Nat64],
-        [Result_2],
+        [Result_4],
         [],
       ),
     'tmp_reset_to_etched' : IDL.Func([IDL.Text], [], []),
-    'tune' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat8], [Result_2], []),
+    'tune' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat8], [Result_4], []),
   });
 };
 export const init = ({ IDL }) => {
   const LaunchRaisedBtcShare = IDL.Record({
     'referral_bonus_per_mille' : IDL.Nat16,
-    'referrer_bonus_per_mille' : IDL.Nat16,
     'exchange_fee_per_mille' : IDL.Nat16,
     'lp_per_mille' : IDL.Nat16,
-    'launch_per_mille' : IDL.Nat16,
   });
-  return [IDL.Nat64, IDL.Nat64, LaunchRaisedBtcShare, IDL.Nat, IDL.Nat8];
+  return [
+    IDL.Nat64,
+    IDL.Nat64,
+    LaunchRaisedBtcShare,
+    IDL.Nat,
+    IDL.Nat8,
+    IDL.Nat8,
+    IDL.Nat8,
+    IDL.Nat64,
+    IDL.Nat64,
+    IDL.Nat32,
+  ];
 };

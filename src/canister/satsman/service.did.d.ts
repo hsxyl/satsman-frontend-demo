@@ -3,6 +3,7 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface Account {
+  'withdraw_txid' : [] | [string],
   'total_contributed_btc' : bigint,
   'btc_balance' : bigint,
   'referral_reward' : bigint,
@@ -24,6 +25,7 @@ export interface CreateLaunchState {
   'utxo' : Utxo,
   'register_pool_address' : string,
   'nonce' : bigint,
+  'min_start_block_height' : number,
 }
 export type Event = {
     'Withdraw' : {
@@ -50,12 +52,18 @@ export type ExchangeError = { 'InvalidArgs' : string } |
   { 'CustomError' : string };
 export interface ExchangeState {
   'rune_premine_amount' : bigint,
+  'raising_target_max' : bigint,
+  'raising_target_min' : bigint,
   'minimum_top_up_sats' : bigint,
+  'active_launch_pool_address_set' : Array<string>,
   'uuid' : bigint,
+  'launch_duration_blocks' : number,
   'register_pool_address' : [] | [string],
   'rune_divisibility' : number,
   'user_referral_codes' : Array<[string, string]>,
+  'launch_rune_reverse_for_lp_percent' : number,
   'is_task_running' : boolean,
+  'launch_rune_percent' : number,
   'create_fee_sats' : bigint,
   'launch_raised_btc_share' : LaunchRaisedBtcShare,
   'code_of_users' : Array<[string, string]>,
@@ -85,17 +93,22 @@ export interface IntentionSet {
   'initiator_address' : string,
   'intentions' : Array<Intention>,
 }
+export interface LaunchArgs {
+  'start_height' : number,
+  'social_info' : SocialInfo,
+  'banner' : [] | [string],
+  'description' : [] | [string],
+  'raising_target_sats' : bigint,
+}
 export interface LaunchRaisedBtcShare {
   'referral_bonus_per_mille' : number,
-  'referrer_bonus_per_mille' : number,
   'exchange_fee_per_mille' : number,
   'lp_per_mille' : number,
-  'launch_per_mille' : number,
 }
 export interface LaunchRuneEtchingArgs {
-  'rune_logo' : LogoParams,
+  'rune_logo' : [] | [LogoParams],
   'rune_name' : string,
-  'rune_symbol' : string,
+  'rune_symbol' : [] | [string],
 }
 export interface LaunchpadState {
   'txid' : string,
@@ -117,24 +130,24 @@ export interface OutputCoin { 'to' : string, 'coin' : CoinBalance }
 export interface PoolBasic { 'name' : string, 'address' : string }
 export interface PoolBusinessStateView {
   'status' : PoolStatus,
-  'website_url' : [] | [string],
   'creator' : string,
-  'launch_rune_etching_args' : [] | [LaunchRuneEtchingArgs],
+  'start_height' : number,
+  'launch_rune_etching_args' : LaunchRuneEtchingArgs,
   'reveal_tx' : [] | [string],
-  'twitter_url' : [] | [string],
+  'end_height' : number,
   'pubkey' : string,
   'btc_amount_for_lp' : bigint,
   'raising_target' : bigint,
   'rune_premine' : [] | [bigint],
   'key_path' : string,
   'highest_block_states' : [] | [BlockState],
-  'end_block' : [] | [number],
   'rune_amount_for_lp' : [] | [bigint],
+  'launch_args' : LaunchArgs,
   'rune_amount_for_launch' : [] | [bigint],
   'pool_address' : string,
   'launch_raised_btc_share' : LaunchRaisedBtcShare,
+  'add_lp_txid' : [] | [string],
   'rune_id' : [] | [string],
-  'start_block' : [] | [number],
   'etch_commit_tx' : [] | [string],
 }
 export interface PoolInfo {
@@ -153,19 +166,28 @@ export type PoolStatus = { 'Init' : null } |
   { 'AddedLp' : null } |
   { 'LaunchSuccess' : null } |
   { 'AddingLp' : null } |
-  { 'Etched' : null } |
+  { 'EtchFailed' : string } |
   { 'Processing' : null } |
   { 'Etching' : null } |
   { 'LaunchFailed' : null };
-export type Result = { 'Ok' : string } |
-  { 'Err' : ExchangeError };
-export type Result_1 = { 'Ok' : string } |
+export type Result = { 'Ok' : boolean } |
   { 'Err' : string };
-export type Result_2 = { 'Ok' : null } |
+export type Result_1 = { 'Ok' : string } |
   { 'Err' : ExchangeError };
+export type Result_2 = { 'Ok' : string } |
+  { 'Err' : string };
 export type Result_3 = { 'Ok' : null } |
   { 'Err' : string };
+export type Result_4 = { 'Ok' : null } |
+  { 'Err' : ExchangeError };
 export interface RollbackTxArgs { 'txid' : string, 'reason_code' : string }
+export interface SocialInfo {
+  'twitter' : [] | [string],
+  'website' : [] | [string],
+  'discord' : [] | [string],
+  'telegram' : [] | [string],
+  'github' : [] | [string],
+}
 export interface UserInfoOfLaunch {
   'tune' : number,
   'account' : [] | [Account],
@@ -180,9 +202,9 @@ export interface Utxo {
   'vout' : number,
 }
 export interface _SERVICE {
-  'etching_for_launch' : ActorMethod<[string, LaunchRuneEtchingArgs], Result>,
-  'execute_tx' : ActorMethod<[ExecuteTxArgs], Result_1>,
-  'finalize_etching' : ActorMethod<[string], Result_2>,
+  'check_rune_name_available' : ActorMethod<[string], Result>,
+  'etching_for_launch' : ActorMethod<[string, LaunchRuneEtchingArgs], Result_1>,
+  'execute_tx' : ActorMethod<[ExecuteTxArgs], Result_2>,
   'generate_referral_code' : ActorMethod<[string], string>,
   'get_block_state' : ActorMethod<[string], Array<BlockState>>,
   'get_create_launch_info' : ActorMethod<[], CreateLaunchState>,
@@ -199,12 +221,12 @@ export interface _SERVICE {
   'get_user_info_of_launch' : ActorMethod<[string, string], UserInfoOfLaunch>,
   'init_register_pool' : ActorMethod<[string, number, bigint], string>,
   'new_block' : ActorMethod<[NewBlockInfo], Result_3>,
+  'query_tx_event' : ActorMethod<[string], [] | [Event]>,
   'reset_blocks' : ActorMethod<[], Result_3>,
   'rollback_tx' : ActorMethod<[RollbackTxArgs], Result_3>,
-  'set_user_referral_code' : ActorMethod<[string, string, string], Result_2>,
-  'start_launch' : ActorMethod<[string, number, number, bigint], Result_2>,
+  'set_user_referral_code' : ActorMethod<[string, string, string], Result_4>,
   'tmp_reset_to_etched' : ActorMethod<[string], undefined>,
-  'tune' : ActorMethod<[string, string, number], Result_2>,
+  'tune' : ActorMethod<[string, string, number], Result_4>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

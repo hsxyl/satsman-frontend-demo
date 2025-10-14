@@ -21,6 +21,7 @@ import {
   useUserInfoOfLaunch,
 } from "hooks/use-pool";
 import { useLoginUserBtcUtxo, useWalletBtcUtxos } from "hooks/use-utxos";
+// @ts-ignore
 import { useSiwbIdentity } from "oct-ic-siwb-lasereyes-connector";
 import { use, useEffect, useMemo, useState } from "react";
 import { convertUtxo } from "utils";
@@ -65,14 +66,12 @@ export function Launch() {
 
   return (
     <div className="flex flex-col items-center min-h-screen p-4 bg-[#f0f2f5]">
-      <div className="w-full max-w-2xl bg-white p-6 rounded shadow">
-        <Etching pool_business_state={pool_business_state![0]!} />
-      </div>
-      {status_number >= 3 && (
+      
+      {/* {status_number >= 3 && ( */}
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
           <LaunchManager pool_business_state={pool_business_state![0]!} />
         </div>
-      )}
+      {/* )} */}
       {status_number > 5 && (
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
           <LaunchSuccess pool_business_state={pool_business_state![0]!} />
@@ -418,14 +417,23 @@ function LaunchManager({
 }) {
   const status_number = pool_status_number(pool_business_state.status);
   console.log({ status_number });
+  const status_str = pool_status_str(pool_business_state.status);
 
   return (
     <div>
-      {status_number >= 4 ? (
+      {/* {status_number >= 4 ? ( */}
         <LaunchInfo pool_business_state={pool_business_state} />
-      ) : (
-        <StartLaunch pool_address={pool_business_state.pool_address} />
-      )}
+      {/* ) : (
+        <div>
+          <p>Launch Info</p>
+          <p>{status_str}</p>
+          <p>{pool_business_state.launch_rune_etching_args.rune_name}</p>
+          <p>{pool_business_state.start_block}</p>
+          <p>{pool_business_state.end_block}</p>
+
+        </div>
+        // <StartLaunch pool_address={pool_business_state.pool_address} />
+      )} */}
     </div>
   );
 }
@@ -435,7 +443,7 @@ function LaunchSuccess({
 }: {
   pool_business_state: PoolBusinessStateView;
 }) {
-  const rune_name = pool_business_state.launch_rune_etching_args[0]?.rune_name;
+  const rune_name = pool_business_state.launch_rune_etching_args.rune_name;
   const rune_id = pool_business_state.rune_id[0]!;
   const [launchSwapPool, setLaunchSwapPool] = useState<PoolBasic | undefined>(
     undefined
@@ -588,10 +596,13 @@ function LaunchInfo({
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Launch Info</h2>
+      <Divider />
+      <h3 className="text-lg font-semibold mb-2">Basic Info</h3>
       <div>
         <p>Status: {status_str}</p>
-        <p>Start Block: {pool_business_state?.start_block}</p>
-        <p>End Block: {pool_business_state?.end_block}</p>
+        <p>Start Block: {pool_business_state?.start_height}</p>
+        <p>End Block: {pool_business_state?.end_height}</p>
+        <p>Raising Target: {pool_business_state?.launch_args.raising_target_sats}</p>
         <p>Total Raised Btc: {last_block_state?.total_raised_btc_balances}</p>
         <p>Total Distributed Rune: {last_block_state?.total_minted_rune}</p>
       </div>
@@ -605,244 +616,244 @@ type FieldType = {
   raising_target?: number;
 };
 
-function StartLaunch({ pool_address }: { pool_address: string }) {
-  const [calling, setCalling] = useState<boolean>(false);
-  const onFinish: FormProps<FieldType>["onFinish"] = async (values) => {
-    setCalling(true);
-    satsmanActor
-      .start_launch(
-        pool_address,
-        Number(values.start_block!),
-        Number(values.end_block!),
-        BigInt(values.raising_target!)
-      )
-      .then((r) => {
-        if ("Err" in r) {
-          throw new Error(r.Err.toString());
-        }
-      })
-      .catch((e) => {
-        alert("Start Launch Failed: " + e.message);
-        console.error(e);
-      })
-      .finally(() => {
-        window.location.reload();
-      });
-  };
-  return (
-    <div>
-      <h2>Start Launch</h2>
-      <Form className="w-1/2" name="start_launch" onFinish={onFinish}>
-        <Form.Item<FieldType>
-          label="Start Block"
-          name="start_block"
-          rules={[{ required: true, message: "Please input start block!" }]}
-        >
-          <Input className="w-1/2" type="number" />
-        </Form.Item>
-        <Form.Item<FieldType>
-          label="End Block"
-          name="end_block"
-          rules={[{ required: true, message: "Please input end block!" }]}
-        >
-          <Input type="number" />
-        </Form.Item>
-        <Form.Item<FieldType>
-          label="Raising Target (sats)"
-          name="raising_target"
-          rules={[{ required: true, message: "Please input raising target!" }]}
-        >
-          <Input type="number" />
-        </Form.Item>
-        <Form.Item label={null}>
-          <Button loading={calling} type="primary" htmlType="submit">
-            Start
-          </Button>
-        </Form.Item>
-      </Form>
-    </div>
-  );
-}
+// function StartLaunch({ pool_address }: { pool_address: string }) {
+//   const [calling, setCalling] = useState<boolean>(false);
+//   const onFinish: FormProps<FieldType>["onFinish"] = async (values) => {
+//     setCalling(true);
+//     satsmanActor
+//       .start_launch(
+//         pool_address,
+//         Number(values.start_block!),
+//         Number(values.end_block!),
+//         BigInt(values.raising_target!)
+//       )
+//       .then((r) => {
+//         if ("Err" in r) {
+//           throw new Error(r.Err.toString());
+//         }
+//       })
+//       .catch((e) => {
+//         alert("Start Launch Failed: " + e.message);
+//         console.error(e);
+//       })
+//       .finally(() => {
+//         window.location.reload();
+//       });
+//   };
+//   return (
+//     <div>
+//       <h2>Start Launch</h2>
+//       <Form className="w-1/2" name="start_launch" onFinish={onFinish}>
+//         <Form.Item<FieldType>
+//           label="Start Block"
+//           name="start_block"
+//           rules={[{ required: true, message: "Please input start block!" }]}
+//         >
+//           <Input className="w-1/2" type="number" />
+//         </Form.Item>
+//         <Form.Item<FieldType>
+//           label="End Block"
+//           name="end_block"
+//           rules={[{ required: true, message: "Please input end block!" }]}
+//         >
+//           <Input type="number" />
+//         </Form.Item>
+//         <Form.Item<FieldType>
+//           label="Raising Target (sats)"
+//           name="raising_target"
+//           rules={[{ required: true, message: "Please input raising target!" }]}
+//         >
+//           <Input type="number" />
+//         </Form.Item>
+//         <Form.Item label={null}>
+//           <Button loading={calling} type="primary" htmlType="submit">
+//             Start
+//           </Button>
+//         </Form.Item>
+//       </Form>
+//     </div>
+//   );
+// }
 
-function Etching({
-  // game_and_pool
-  pool_business_state,
-}: {
-  pool_business_state: PoolBusinessStateView;
-  // game_and_pool: GameAndPool
-}) {
-  // game.
-  const [isEtching, setIsEtching] = useState<boolean>(false);
-  const { identity } = useSiwbIdentity();
+// function Etching({
+//   // game_and_pool
+//   pool_business_state,
+// }: {
+//   pool_business_state: PoolBusinessStateView;
+//   // game_and_pool: GameAndPool
+// }) {
+//   // game.
+//   const [isEtching, setIsEtching] = useState<boolean>(false);
+//   const { identity } = useSiwbIdentity();
 
-  let commit_txid = pool_business_state.etch_commit_tx[0] || undefined;
+//   let commit_txid = pool_business_state.etch_commit_tx[0] || undefined;
 
-  return (
-    <div className="flex flex-col items-center text-black">
-      {commit_txid ? (
-        <EtchProcess
-          commit_txid={commit_txid}
-          pool_business_state={pool_business_state}
-        />
-      ) : (
-        <div className="w-100 mt-20">
-          <p>
-            Please transfer 1 $ICP to this canister before etch: <br />
-            <p className="text-blue-500 text-xl font-medium my-2">
-              {SATSMAN_CANISTER_ID}
-            </p>{" "}
-          </p>
-          <Search
-            placeholder="Rune Name"
-            enterButton="Etch"
-            loading={isEtching}
-            onSearch={(value) => {
-              setIsEtching(true);
-              satsmanActorWithIdentity(identity!)
-                .etching_for_launch(pool_business_state.pool_address, {
-                  rune_name: value,
-                  rune_logo: {
-                    content_type: "image/png",
-                    content_base64: "",
-                  },
-                  rune_symbol: "",
-                })
-                .then((r) => {
-                  if ("Ok" in r) {
-                    alert("Etch Success: " + JSON.stringify(r.Ok));
-                  }
-                  if ("Err" in r) {
-                    throw new Error(r.Err.toString());
-                  }
-                })
-                .catch((e) => {
-                  alert("Etch Failed: " + e.message);
-                  console.error(e);
-                })
-                .finally(() => {
-                  // setIsEtching(false);
-                  window.location.reload();
-                });
-            }}
-          />
-          <p className="mt-2 text-sm text-gray-500">
-            Find an usable Rune Name on
-            <a
-              className="text-blue-500 underline ml-1"
-              href="https://testnet4.unisat.io/runes/inscribe?tab=etch"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Unisat
-            </a>
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
+//   return (
+//     <div className="flex flex-col items-center text-black">
+//       {commit_txid ? (
+//         <EtchProcess
+//           commit_txid={commit_txid}
+//           pool_business_state={pool_business_state}
+//         />
+//       ) : (
+//         <div className="w-100 mt-20">
+//           <p>
+//             Please transfer 1 $ICP to this canister before etch: <br />
+//             <p className="text-blue-500 text-xl font-medium my-2">
+//               {SATSMAN_CANISTER_ID}
+//             </p>{" "}
+//           </p>
+//           <Search
+//             placeholder="Rune Name"
+//             enterButton="Etch"
+//             loading={isEtching}
+//             onSearch={(value) => {
+//               setIsEtching(true);
+//               satsmanActorWithIdentity(identity!)
+//                 .etching_for_launch(pool_business_state.pool_address, {
+//                   rune_name: value,
+//                   rune_logo: {
+//                     content_type: "image/png",
+//                     content_base64: "",
+//                   },
+//                   rune_symbol: "",
+//                 })
+//                 .then((r) => {
+//                   if ("Ok" in r) {
+//                     alert("Etch Success: " + JSON.stringify(r.Ok));
+//                   }
+//                   if ("Err" in r) {
+//                     throw new Error(r.Err.toString());
+//                   }
+//                 })
+//                 .catch((e) => {
+//                   alert("Etch Failed: " + e.message);
+//                   console.error(e);
+//                 })
+//                 .finally(() => {
+//                   // setIsEtching(false);
+//                   window.location.reload();
+//                 });
+//             }}
+//           />
+//           <p className="mt-2 text-sm text-gray-500">
+//             Find an usable Rune Name on
+//             <a
+//               className="text-blue-500 underline ml-1"
+//               href="https://testnet4.unisat.io/runes/inscribe?tab=etch"
+//               target="_blank"
+//               rel="noopener noreferrer"
+//             >
+//               Unisat
+//             </a>
+//           </p>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
 
-function EtchProcess({
-  commit_txid,
-  pool_business_state,
-}: {
-  commit_txid: string | undefined;
-  pool_business_state: PoolBusinessStateView;
-}) {
-  const { identity } = useSiwbIdentity();
-  const [finalizing, setFinalizing] = useState<boolean>(false);
+// function EtchProcess({
+//   pool_business_state,
+// }: {
+//   pool_business_state: PoolBusinessStateView;
+// }) {
+//   const { identity } = useSiwbIdentity();
+//   const [finalizing, setFinalizing] = useState<boolean>(false);
 
-  const {
-    data: etchingRequest,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    isFetching,
-  } = useEtchingRequest(commit_txid);
+//   const commit_txid = pool_business_state.etch_commit_tx[0] || undefined;
 
-  console.log({ etchingRequest });
+//   const {
+//     data: etchingRequest,
+//     isLoading,
+//     isError,
+//     error,
+//     refetch,
+//     isFetching,
+//   } = useEtchingRequest(commit_txid);
 
-  if (!commit_txid) {
-    return <div>No Etch Process</div>;
-  }
+//   console.log({ etchingRequest });
 
-  if (isLoading) {
-    return <Skeleton />;
-  }
+//   if (!commit_txid) {
+//     return <div>No Etch Process</div>;
+//   }
 
-  if (isError) {
-    return <div>Error loading etch process: {error.message}</div>;
-  }
+//   if (isLoading) {
+//     return <Skeleton />;
+//   }
 
-  if (!etchingRequest) {
-    return <div>No Etching Request Found</div>;
-  }
+//   if (isError) {
+//     return <div>Error loading etch process: {error.message}</div>;
+//   }
 
-  if (!identity) {
-    return <div>No Siwb Identity Found</div>;
-  }
+//   if (!etchingRequest) {
+//     return <div>No Etching Request Found</div>;
+//   }
 
-  const status = Object.keys(etchingRequest![0]!.status)[0];
-  const isFinal = status === "Final";
-  const poolStatusStr = pool_status_str(pool_business_state.status);
+//   if (!identity) {
+//     return <div>No Siwb Identity Found</div>;
+//   }
 
-  return (
-    <div className="mt-10 text-sm font-medium text-gray-700 flex flex-col items-start">
-      <h2 className="text-lg font-semibold">Etching in Progress</h2>
-      <p>Rune Name: {etchingRequest![0]!.etching_args.rune_name}</p>
-      <p>Premine: {etchingRequest![0]!.etching_args.premine}</p>
-      <p>Commit ID: {commit_txid}</p>
-      <p>Reveal ID: {etchingRequest![0]!.reveal_txid}</p>
-      <p className="flex">
-        Status:{" "}
-        <span
-          className={isFinal ? "text-green-500 ml-1" : "text-yellow-500 ml-1"}
-        >
-          {Object.keys(etchingRequest![0]!.status)[0]}
-        </span>
-      </p>
-      <p>
-        Create At:{" "}
-        {new Date(
-          Number(etchingRequest![0]!.time_at / BigInt(1000000))
-        ).toLocaleString()}
-      </p>
+//   const status = Object.keys(etchingRequest![0]!.status)[0];
+//   const isFinal = status === "Final";
+//   const poolStatusStr = pool_status_str(pool_business_state.status);
 
-      {isFinal ? (
-        <Button
-          disabled={poolStatusStr !== "Etching"}
-          loading={finalizing}
-          className="mt-10"
-          type="primary"
-          onClick={() => {
-            setFinalizing(true);
-            satsmanActorWithIdentity(identity!)
-              .finalize_etching(pool_business_state.pool_address)
-              .then(() => {})
-              .catch((e) => {
-                alert("Finalize Etch Failed: " + e.message);
-                console.error(e);
-              })
-              .finally(() => {
-                window.location.reload();
-              });
-          }}
-        >
-          {poolStatusStr === "Etching"
-            ? "Finalize Etching"
-            : "Already Finished Etch"}
-        </Button>
-      ) : (
-        <Button
-          loading={isFetching}
-          onClick={() => {
-            refetch();
-          }}
-        >
-          Sync
-        </Button>
-      )}
-    </div>
-  );
-}
+//   return (
+//     <div className="mt-10 text-sm font-medium text-gray-700 flex flex-col items-start">
+//       <h2 className="text-lg font-semibold">Etching in Progress</h2>
+//       <p>Rune Name: {etchingRequest![0]!.etching_args.rune_name}</p>
+//       <p>Premine: {etchingRequest![0]!.etching_args.premine}</p>
+//       <p>Commit ID: {commit_txid}</p>
+//       <p>Reveal ID: {etchingRequest![0]!.reveal_txid}</p>
+//       <p className="flex">
+//         Status:{" "}
+//         <span
+//           className={isFinal ? "text-green-500 ml-1" : "text-yellow-500 ml-1"}
+//         >
+//           {Object.keys(etchingRequest![0]!.status)[0]}
+//         </span>
+//       </p>
+//       <p>
+//         Create At:{" "}
+//         {new Date(
+//           Number(etchingRequest![0]!.time_at / BigInt(1000000))
+//         ).toLocaleString()}
+//       </p>
+
+//       {isFinal ? (
+//         <Button
+//           disabled={poolStatusStr !== "Etching"}
+//           loading={finalizing}
+//           className="mt-10"
+//           type="primary"
+//           onClick={() => {
+//             setFinalizing(true);
+//             satsmanActorWithIdentity(identity!)
+//               .finalize_etching(pool_business_state.pool_address)
+//               .then(() => {})
+//               .catch((e) => {
+//                 alert("Finalize Etch Failed: " + e.message);
+//                 console.error(e);
+//               })
+//               .finally(() => {
+//                 window.location.reload();
+//               });
+//           }}
+//         >
+//           {poolStatusStr === "Etching"
+//             ? "Finalize Etching"
+//             : "Already Finished Etch"}
+//         </Button>
+//       ) : (
+//         <Button
+//           loading={isFetching}
+//           onClick={() => {
+//             refetch();
+//           }}
+//         >
+//           Sync
+//         </Button>
+//       )}
+//     </div>
+//   );
+// }

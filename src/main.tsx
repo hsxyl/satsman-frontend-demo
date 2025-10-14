@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import { App } from "./App";
 import { LaserEyesProvider, TESTNET4 } from "@omnisat/lasereyes";
+// @ts-ignore
 import { SiwbIdentityProvider } from "oct-ic-siwb-lasereyes-connector";
 import type { _SERVICE as siwbService } from "./canister/siwb/ic_siwb_provider.d.ts";
 import { idlFactory as siwbIdl } from "./canister/siwb/ic_siwb_provider.idl";

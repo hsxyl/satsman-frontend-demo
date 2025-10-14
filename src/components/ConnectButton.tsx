@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Button } from "antd";
 import { useAtom } from "jotai";
+
+// @ts-ignore
 import { useSiwbIdentity } from "oct-ic-siwb-lasereyes-connector";
 import { UNISAT, useLaserEyes } from "@omnisat/lasereyes";
 import { connectWalletModalOpenAtom } from "./ConnectDialog";

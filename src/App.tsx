@@ -7,6 +7,7 @@ import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LoadingOrError } from "./components/LoadingOrError";
 import { Launch } from "pages/Launch";
+import { CreateLaunch } from "pages/CreateLaunch";
 
 function renderError({ error }: FallbackProps) {
   return <LoadingOrError error={error} />;
@@ -21,6 +22,7 @@ export function App() {
           <Topbar />
           <Routes>
             <Route element={<Home />} index={true} />
+            <Route element={<CreateLaunch />} path="/create" />
             <Route element={<Launch />} path="/launch/:pool_address" />
             {/* <Route path='/debug/:address' element={<Debug />} /> */}
           </Routes>

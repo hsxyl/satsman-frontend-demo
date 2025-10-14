@@ -25,7 +25,7 @@ export function satsmanActorWithIdentity(
   })
 }
 
-export type PoolStatusStr = "Init" | "InitUtxoFinalized" | "Etching" | "Etched" | "Processing" | "LaunchFailed" | "LaunchSuccess" | "AddingLp" | "AddedLp"
+export type PoolStatusStr = "Init" | "InitUtxoFinalized" | "Etching" | "EtchFailed" | "Processing" | "LaunchFailed" | "LaunchSuccess" | "AddingLp" | "AddedLp"
 
 export function pool_status_str(launch_status: PoolStatus): PoolStatusStr {
   let s = Object.entries(launch_status)[0]![0];

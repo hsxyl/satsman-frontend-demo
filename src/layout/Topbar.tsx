@@ -6,6 +6,7 @@ import { AccountButton } from '../components/AccountButton'
 import ConnectButton from '../components/ConnectButton'
 import { Button, Skeleton } from 'antd'
 import { Link } from 'react-router-dom'
+// @ts-ignore
 import { useSiwbIdentity } from 'oct-ic-siwb-lasereyes-connector'
 
 export function Topbar() {

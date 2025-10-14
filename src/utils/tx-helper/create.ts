@@ -4,7 +4,7 @@ import {
   ocActor,
 } from "../../canister/orchestrator/actor";
 import { BITCOIN, UTXO_DUST } from "../../constants";
-import { AddressType, ToSignInput, UnspentOutput } from "../../types";
+import { AddressType, LaunchArgs, LaunchRuneEtchingArgs, ToSignInput, UnspentOutput } from "../../types";
 import { addressTypeToString, getAddressType } from "../address";
 import { Transaction } from "../transaction";
 import * as bitcoin from "bitcoinjs-lib";
@@ -25,6 +25,8 @@ export async function createTx({
   createFee,
   nonce,
   signPsbt,
+  launch_rune_etching_args,
+  launch_args,
 }: {
   userBtcUtxos: UnspentOutput[];
   poolBtcUtxo: UnspentOutput;
@@ -33,6 +35,8 @@ export async function createTx({
   createFee: bigint;
   nonce: bigint;
   signPsbt: any;
+  launch_rune_etching_args: LaunchRuneEtchingArgs;
+  launch_args: LaunchArgs;
 }) {
   let feeRate = await ocActor
     .get_status()
@@ -191,7 +195,10 @@ export async function createTx({
             },
           ],
           output_coins: [],
-          action_params: "",
+          action_params: JSON.stringify({
+            launch_args,
+            launch_rune_etching_args,
+          }),
           nonce: BigInt(nonce),
           pool_utxo_spent: [],
           pool_utxo_received: [],
@@ -212,7 +219,7 @@ export async function createTx({
     })
     .catch((err) => {
       console.log("invoke error", err);
-      alert("Add Liquidity Failed: " + err);
+      alert("Create Pool Failed: " + err);
       // reload page
       window.location.reload();
       throw err;

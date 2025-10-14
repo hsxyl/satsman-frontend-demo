@@ -1,6 +1,7 @@
 import { UNISAT, useLaserEyes } from "@omnisat/lasereyes";
 import { Button, Drawer, Skeleton } from "antd";
 import { id } from "happy-dom/lib/PropertySymbol.js";
+// @ts-ignore
 import { useSiwbIdentity } from "oct-ic-siwb-lasereyes-connector";
 import { useEffect, useState } from "react";
 
