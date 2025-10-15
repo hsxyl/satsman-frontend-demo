@@ -31,7 +31,7 @@
 		"decimal.js": "^10.5.0",
 		"ecpair": "^3.0.0-rc.0",
 		"oct-ic-siwb-lasereyes-connector": "0.2.0",
-		"@omnity/ree-client-ts-sdk": "^v0.3.9",
+		"@omnity/ree-client-ts-sdk": "=v0.3.9",
 		"jotai": "^2.12.3",
 		"react": "19.1.0",
 		"react-dom": "19.1.0",

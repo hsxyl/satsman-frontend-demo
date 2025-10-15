@@ -20,8 +20,16 @@ export default function ConnectWalletModal() {
   const [connectWalletModalOpen, setConnectWalletModalOpen] = useAtom(
     connectWalletModalOpenAtom
   );
-  const { updateWallet } = useRee();
   const p = useLaserEyes();
+
+  const {address, paymentAddress} = p;
+  const { updateWallet } = useRee();
+  useEffect(()=> {
+    updateWallet({
+      address,
+      paymentAddress,
+    });
+  }, [address, paymentAddress])
 
   const {
     prepareLogin,
@@ -36,89 +44,6 @@ export default function ConnectWalletModal() {
     identity,
     identityPublicKey,
   } = useSiwbIdentity();
-
-  // setLaserEyes(p)
-
-  // setLaserEyes({
-  //   address: p.paymentAddress,
-  //   isInitializing: false,
-  //   connected: false,
-  //   isConnecting: false,
-  //   publicKey: "",
-  //   paymentAddress: "",
-  //   paymentPublicKey: "",
-  //   balance: undefined,
-  //   network: "mainnet",
-  //   library: undefined,
-  //   provider: undefined,
-  //   accounts: [],
-  //   hasUnisat: false,
-  //   hasXverse: false,
-  //   hasOrange: false,
-  //   hasOpNet: false,
-  //   hasOyl: false,
-  //   hasMagicEden: false,
-  //   hasOkx: false,
-  //   hasLeather: false,
-  //   hasPhantom: false,
-  //   hasWizz: false,
-  //   connect: function (walletName: ProviderType): Promise<void> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   disconnect: function (): void {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   requestAccounts: function (): Promise<string[]> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   getNetwork: function (): Promise<string | undefined> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   switchNetwork: function (network: NetworkType): Promise<void> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   getPublicKey: function (): Promise<string> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   getBalance: function (): Promise<string> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   getInscriptions: function (): Promise<any[]> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   sendBTC: function (to: string, amount: number): Promise<string> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   signMessage: function (
-  //     message: string,
-  //     toSignAddress?: string | undefined
-  //   ): Promise<string> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   signPsbt: function (
-  //     tx: string,
-  //     finalize?: boolean | undefined,
-  //     broadcast?: boolean | undefined
-  //   ): Promise<
-  //     | {
-  //         signedPsbtHex: string | undefined;
-  //         signedPsbtBase64: string | undefined;
-  //         txId?: string | undefined;
-  //       }
-  //     | undefined
-  //   > {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   pushPsbt: function (tx: string): Promise<string | undefined> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  //   inscribe: function (
-  //     contentBase64: string,
-  //     mimeType: ContentType
-  //   ): Promise<string | string[]> {
-  //     throw new Error("Function not implemented.");
-  //   },
-  // });
 
   const [loading, setLoading] = useState<boolean>(false);
   const [manually, setManually] = useState<boolean>(false);
@@ -187,10 +112,6 @@ export default function ConnectWalletModal() {
           onClick={async () => {
             setManually(true);
             await setLaserEyes(p, UNISAT);
-            updateWallet({
-              address: p.address, 
-              paymentAddress: p.paymentAddress
-            })
           }}
           disabled={loading}
           block

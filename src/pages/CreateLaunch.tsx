@@ -28,13 +28,8 @@ export function CreateLaunch() {
 
   //   const { data: btcUtxos, isLoading: isLoadingUtxo } = useLoginUserBtcUtxo();
   const { data: latestBlockHeight } = useLatestBlockHeight();
-  const { signPsbt, address, paymentAddress } = useLaserEyes();
-  const { client, updateWallet, createTransaction } =
-    useRee();
-
-  console.log({ client, address, paymentAddress });
-
-  console.log("latestBlockHeight", latestBlockHeight);
+  const { signPsbt } = useLaserEyes();
+  const { createTransaction, address, paymentAddress } = useRee();
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 bg-[#f0f2f5]">
@@ -117,9 +112,9 @@ export function CreateLaunch() {
           </div>
         </div>
         <div className="mb-4 flex flex-row items-center">
-          <p className="mr-4">Raising Target(M S):</p>
+          <p className="mr-4">Raising Target(K S):</p>
           <input
-            placeholder="10-1000 M Sats"
+            placeholder="10-1000 K Sats"
             value={raisingTarget}
             onChange={(e) => {
               setRaisingTarget(e.target.value);
@@ -132,17 +127,12 @@ export function CreateLaunch() {
           onClick={async () => {
             setCalling(true);
             try {
-              if (!address) {
+              if (!address || !paymentAddress) {
                 alert("Please connect your wallet first.");
                 return;
               }
               let create_launch_state =
                 await satsmanActor.get_create_launch_info();
-
-            updateWallet({
-                address: address,
-                paymentAddress: paymentAddress!,
-            })
 
               const tx = await createTransaction();
               let poolUtxo = convertUtxo(
