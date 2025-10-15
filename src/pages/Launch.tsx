@@ -66,11 +66,10 @@ export function Launch() {
 
   return (
     <div className="flex flex-col items-center min-h-screen p-4 bg-[#f0f2f5]">
-      
       {/* {status_number >= 3 && ( */}
-        <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
-          <LaunchManager pool_business_state={pool_business_state![0]!} />
-        </div>
+      <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
+        <LaunchManager pool_business_state={pool_business_state![0]!} />
+      </div>
       {/* )} */}
       {status_number > 5 && (
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
@@ -231,25 +230,29 @@ function UserManager({
                   ),
                   runeId: pool_business_state.rune_id[0]!,
                   launchPoolBtcUtxo: convertUtxo(pool_state.utxo, key),
-                  
+
                   paymentAddress: paymentAddress,
                   address: address,
                   launchPoolAddress: pool_business_state.pool_address!,
                   signPsbt: signPsbt,
                   launchPoolNonce: pool_state.nonce + BigInt(1),
-                  withdrawBtcAmount: account!.btc_balance - account!.used_btc_balance + account!.referral_reward,
+                  withdrawBtcAmount:
+                    account!.btc_balance -
+                    account!.used_btc_balance +
+                    account!.referral_reward,
                   withdrawRuneAmount: account!.minted_rune_amount,
-                }).then((e) => {
-                  console.log("invoke success and txid ", e);
-                  alert("Withdraw Success: " + e);
-                }).catch(e=>{
-                  throw e;
                 })
+                  .then((e) => {
+                    console.log("invoke success and txid ", e);
+                    alert("Withdraw Success: " + e);
+                  })
+                  .catch((e) => {
+                    throw e;
+                  });
               } catch (e) {
                 console.error(e);
                 alert("Withdraw failed: " + (e as Error).message);
-              }
-              finally {
+              } finally {
                 setCalling(false);
               }
             }}
@@ -422,7 +425,7 @@ function LaunchManager({
   return (
     <div>
       {/* {status_number >= 4 ? ( */}
-        <LaunchInfo pool_business_state={pool_business_state} />
+      <LaunchInfo pool_business_state={pool_business_state} />
       {/* ) : (
         <div>
           <p>Launch Info</p>
@@ -602,17 +605,35 @@ function LaunchInfo({
         <p>Status: {status_str}</p>
         <p>Start Block: {pool_business_state?.start_height}</p>
         <p>End Block: {pool_business_state?.end_height}</p>
-        <p>Raising Target: {pool_business_state?.launch_args.raising_target_sats}</p>
+        <p>
+          Raising Target: {pool_business_state?.launch_args.raising_target_sats}
+        </p>
         <p>Total Raised Btc: {last_block_state?.total_raised_btc_balances}</p>
         <p>Total Distributed Rune: {last_block_state?.total_minted_rune}</p>
       </div>
       <Divider />
       <h3 className="text-lg font-semibold">Rune Info</h3>
-      {
-        status_str === "Etching" && (
-          <EtchProcess pool_business_state={pool_business_state!} /> 
-        )
-      }
+      {status_str === "Etching" ? (
+        <EtchProcess pool_business_state={pool_business_state!} />
+      ) : (
+        <RuneInfo pool_business_state={pool_business_state!}></RuneInfo>
+      )}
+    </div>
+  );
+}
+
+function RuneInfo({
+  pool_business_state,
+}: {
+  pool_business_state: PoolBusinessStateView;
+}) {
+  return (
+    <div>
+      <p>Rune Name: {pool_business_state.launch_rune_etching_args.rune_name}</p>
+      <p>Rune Id: {pool_business_state.rune_id}</p>
+      <p>
+        Rune Total Supply: {pool_business_state.rune_premine}
+      </p>
     </div>
   );
 }
@@ -828,10 +849,7 @@ function EtchProcess({
       </p>
 
       {isFinal ? (
-       <Button>
-        Etch Finalized!
-       </Button>
-
+        <Button>Etch Finalized!</Button>
       ) : (
         <Button
           loading={isFetching}
