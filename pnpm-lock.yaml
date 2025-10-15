@@ -21,8 +21,8 @@ importers:
         specifier: ^0.0.157
         version: 0.0.157(@popperjs/core@2.11.8)(@types/node@22.15.30)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)(vite@6.3.5(@types/node@22.15.30)(jiti@2.6.1)(lightningcss@1.30.1))
       '@omnity/ree-client-ts-sdk':
-        specifier: ^v0.3.8
-        version: 0.3.8(@noble/hashes@1.8.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        specifier: ^v0.3.9
+        version: 0.3.9(@noble/hashes@1.8.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@tanstack/react-query':
         specifier: 5.80.6
         version: 5.80.6(react@19.1.0)
@@ -834,8 +834,8 @@ packages:
   '@omnisat/lasereyes@0.0.157':
     resolution: {integrity: sha512-pcwGLzFmLwMZVqgJPtQ6qDz6F1s1/zOJ5xYX7KzZBufkIEHrC1ScbHS9IHZV6e9xQl33+lrNQrPdjrmYlMkBWA==}
 
-  '@omnity/ree-client-ts-sdk@0.3.8':
-    resolution: {integrity: sha512-MzFHLNXHzxAMB9y1R6mNCvYd2fu/WXDeV5kNvXFWuSOqh9PDDIw6CZU7HQJxowf9YRoMNglA23NiP/3jrnETog==}
+  '@omnity/ree-client-ts-sdk@0.3.9':
+    resolution: {integrity: sha512-9LqvzO9h/1SlY9DhV6WLIH2iSinUcQ4yMg7rMeA51nxOxgZc+mS3QmYeWhjv2+Iq/1D4tDBbJJer+N3fp93jcA==}
     peerDependencies:
       react: '>=17'
       react-dom: '>=17'
@@ -4549,7 +4549,7 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@omnity/ree-client-ts-sdk@0.3.8(@noble/hashes@1.8.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@omnity/ree-client-ts-sdk@0.3.9(@noble/hashes@1.8.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@bitcoinerlab/secp256k1': 1.2.0
       '@dfinity/agent': 3.2.7(@dfinity/candid@3.2.7(@dfinity/principal@3.2.7))(@dfinity/principal@3.2.7)(@noble/hashes@1.8.0)
