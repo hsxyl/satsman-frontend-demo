@@ -21,8 +21,6 @@ export function CreateLaunch() {
   const [startHeight, setStartHeight] = useState<string>("");
   const [raisingTarget, setRaisingTarget] = useState<string>("");
 
-  const [checkingAvailability, setCheckingAvailability] =
-    useState<boolean>(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [calling, setCalling] = useState<boolean>(false);
 
@@ -54,7 +52,7 @@ export function CreateLaunch() {
             Find A Rune Name On Unisat
           </a>
 
-          <Button
+          {/* <Button
             loading={checkingAvailability}
             type="primary"
             className="ml-4"
@@ -81,7 +79,7 @@ export function CreateLaunch() {
             }}
           >
             Check Availability
-          </Button>
+          </Button> */}
         </div>
         <div className="mb-4 flex flex-row items-center">
           <div className="flex flex-row items-center">

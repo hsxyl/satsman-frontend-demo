@@ -594,6 +594,9 @@ function LaunchInfo({
 }: {
   pool_business_state?: PoolBusinessStateView;
 }) {
+  const [runeName, setRuneName] = useState<string>("");
+  const [calling, setCalling] = useState<boolean>(false);
+  const { identity } = useSiwbIdentity();
   let status_str = pool_status_str(pool_business_state?.status!);
   let last_block_state = pool_business_state?.highest_block_states?.[0];
   return (
@@ -602,7 +605,66 @@ function LaunchInfo({
       <Divider />
       <h3 className="text-lg font-semibold mb-2">Basic Info</h3>
       <div>
-        <p>Status: {status_str}</p>
+        <p>
+          Status: {status_str}{" "}
+          {status_str === "EtchFailed" && (
+            <span className="text-red-500">
+              ( {Object.entries(pool_business_state!.status)[0]![1]};)
+            </span>
+          )}
+        </p>
+        {status_str === "EtchFailed" && (
+          <div>
+            <div className="mb-4 flex flex-col items-center">
+              <p className="">Please use new rune name:</p>
+              <input
+                value={runeName}
+                onChange={(e) => {
+                  setRuneName(e.target.value);
+                }}
+                type="text"
+                className="border border-gray-300 rounded px-2 py-1 w-64"
+              />
+              <a
+                href="https://testnet4.unisat.io/runes/inscribe?tab=etch"
+                target="_blank"
+                className="text-blue-500 underline ml-4"
+              >
+                Find Available Rune Name On Unisat
+              </a>
+              <Button
+                loading={calling}
+                onClick={async () => {
+                  setCalling(true);
+                  try {
+                    await satsmanActorWithIdentity(identity!)
+                      .re_etching(pool_business_state!.pool_address, {
+                        rune_name: runeName,
+                        rune_logo: [],
+                        rune_symbol: []
+                      })
+                      .then((r) => {
+                        if ("Err" in r) {
+                          throw new Error(JSON.stringify(r.Err));
+                        }
+                        if ("Ok" in r) {
+                          alert("Re-Etch Success: " + JSON.stringify(r.Ok));
+                          window.location.reload();
+                        }
+                      });
+                  } catch (e) {
+                    console.log("Re-Etch Error", e);
+                    alert("Re-Etch failed: " + (e as Error).message);
+                  } finally {
+                    setCalling(false);
+                  }
+                }}
+              >
+                Re-Etch
+              </Button>
+            </div>
+          </div>
+        )}
         <p>Start Block: {pool_business_state?.start_height}</p>
         <p>End Block: {pool_business_state?.end_height}</p>
         <p>
@@ -631,9 +693,7 @@ function RuneInfo({
     <div>
       <p>Rune Name: {pool_business_state.launch_rune_etching_args.rune_name}</p>
       <p>Rune Id: {pool_business_state.rune_id}</p>
-      <p>
-        Rune Total Supply: {pool_business_state.rune_premine}
-      </p>
+      <p>Rune Total Supply: {pool_business_state.rune_premine}</p>
     </div>
   );
 }

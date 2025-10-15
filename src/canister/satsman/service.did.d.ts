@@ -222,6 +222,7 @@ export interface _SERVICE {
   'init_register_pool' : ActorMethod<[string, number, bigint], string>,
   'new_block' : ActorMethod<[NewBlockInfo], Result_3>,
   'query_tx_event' : ActorMethod<[string], [] | [Event]>,
+  're_etching' : ActorMethod<[string, LaunchRuneEtchingArgs], Result_4>,
   'reset_blocks' : ActorMethod<[], Result_3>,
   'rollback_tx' : ActorMethod<[RollbackTxArgs], Result_3>,
   'set_user_referral_code' : ActorMethod<[string, string, string], Result_4>,

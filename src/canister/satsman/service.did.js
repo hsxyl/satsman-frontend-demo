@@ -195,11 +195,11 @@ export const idlFactory = ({ IDL }) => {
     'block_height' : IDL.Nat32,
   });
   const Result_3 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
+  const Result_4 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : ExchangeError });
   const RollbackTxArgs = IDL.Record({
     'txid' : IDL.Text,
     'reason_code' : IDL.Text,
   });
-  const Result_4 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : ExchangeError });
   return IDL.Service({
     'check_rune_name_available' : IDL.Func([IDL.Text], [Result], ['query']),
     'etching_for_launch' : IDL.Func(
@@ -246,6 +246,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'new_block' : IDL.Func([NewBlockInfo], [Result_3], []),
     'query_tx_event' : IDL.Func([IDL.Text], [IDL.Opt(Event)], ['query']),
+    're_etching' : IDL.Func([IDL.Text, LaunchRuneEtchingArgs], [Result_4], []),
     'reset_blocks' : IDL.Func([], [Result_3], []),
     'rollback_tx' : IDL.Func([RollbackTxArgs], [Result_3], []),
     'set_user_referral_code' : IDL.Func(

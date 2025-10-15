@@ -29,7 +29,7 @@ export type PoolStatusStr = "Init" | "InitUtxoFinalized" | "Etching" | "EtchFail
 
 export function pool_status_str(launch_status: PoolStatus): PoolStatusStr {
   let s = Object.entries(launch_status)[0]![0];
-  if(["Init" , "InitUtxoFinalized" , "Etching" , "Etched" , "Processing" , "LaunchFailed" , "LaunchSuccess" , "AddingLp", "AddedLp"].includes(s)) {
+  if(["Init" , "InitUtxoFinalized" , "Etching" , "EtchFailed", "Processing" , "LaunchFailed" , "LaunchSuccess" , "AddingLp", "AddedLp"].includes(s)) {
     return s as PoolStatusStr;
   } else {
     throw new Error(`Invalid game status: ${s}`);
@@ -38,7 +38,7 @@ export function pool_status_str(launch_status: PoolStatus): PoolStatusStr {
 
 export function pool_status_number(launch_status: PoolStatus): number {
   let s = Object.entries(launch_status)[0]![0];
-  let status_vec = ["Init" , "InitUtxoFinalized" , "Etching" , "Etched" , "Processing" , "LaunchFailed" , "LaunchSuccess", "AddingLp" , "AddedLp"];
+  let status_vec = ["Init" , "InitUtxoFinalized" , "Etching" , "EtchFailed" , "Processing" , "LaunchFailed" , "LaunchSuccess", "AddingLp" , "AddedLp"];
   let idx = status_vec.indexOf(s);
   if(idx >= 0) {
     return idx;
