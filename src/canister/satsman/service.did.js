@@ -5,18 +5,11 @@ export const idlFactory = ({ IDL }) => {
     'lp_per_mille' : IDL.Nat16,
   });
   const Result = IDL.Variant({ 'Ok' : IDL.Bool, 'Err' : IDL.Text });
-  const LogoParams = IDL.Record({
-    'content_type' : IDL.Text,
-    'content_base64' : IDL.Text,
-  });
-  const LaunchRuneEtchingArgs = IDL.Record({
-    'rune_logo' : IDL.Opt(LogoParams),
-    'rune_name' : IDL.Text,
-    'rune_symbol' : IDL.Opt(IDL.Text),
-  });
   const ExchangeError = IDL.Variant({
+    'InvalidRuneName' : IDL.Tuple(IDL.Text, IDL.Text),
     'InvalidArgs' : IDL.Text,
     'PoolBusinessStateNotFound' : IDL.Text,
+    'RuneNameExist' : IDL.Text,
     'ExchangeStateNotInitialized' : IDL.Null,
     'CustomError' : IDL.Text,
   });
@@ -106,6 +99,15 @@ export const idlFactory = ({ IDL }) => {
     'Processing' : IDL.Null,
     'Etching' : IDL.Null,
     'LaunchFailed' : IDL.Null,
+  });
+  const LogoParams = IDL.Record({
+    'content_type' : IDL.Text,
+    'content_base64' : IDL.Text,
+  });
+  const LaunchRuneEtchingArgs = IDL.Record({
+    'rune_logo' : IDL.Opt(LogoParams),
+    'rune_name' : IDL.Text,
+    'rune_symbol' : IDL.Opt(IDL.Text),
   });
   const SocialInfo = IDL.Record({
     'twitter' : IDL.Opt(IDL.Text),
@@ -202,11 +204,7 @@ export const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'check_rune_name_available' : IDL.Func([IDL.Text], [Result], ['query']),
-    'etching_for_launch' : IDL.Func(
-        [IDL.Text, LaunchRuneEtchingArgs],
-        [Result_1],
-        [],
-      ),
+    'etching_for_launch' : IDL.Func([IDL.Text], [Result_1], []),
     'execute_tx' : IDL.Func([ExecuteTxArgs], [Result_2], []),
     'generate_referral_code' : IDL.Func([IDL.Text], [IDL.Text], []),
     'get_block_state' : IDL.Func([IDL.Text], [IDL.Vec(BlockState)], ['query']),
@@ -246,7 +244,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'new_block' : IDL.Func([NewBlockInfo], [Result_3], []),
     'query_tx_event' : IDL.Func([IDL.Text], [IDL.Opt(Event)], ['query']),
-    're_etching' : IDL.Func([IDL.Text, LaunchRuneEtchingArgs], [Result_4], []),
+    're_etching' : IDL.Func([IDL.Text, IDL.Text], [Result_4], []),
     'reset_blocks' : IDL.Func([], [Result_3], []),
     'rollback_tx' : IDL.Func([RollbackTxArgs], [Result_3], []),
     'set_user_referral_code' : IDL.Func(

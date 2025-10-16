@@ -638,17 +638,13 @@ function LaunchInfo({
                   setCalling(true);
                   try {
                     await satsmanActorWithIdentity(identity!)
-                      .re_etching(pool_business_state!.pool_address, {
-                        rune_name: runeName,
-                        rune_logo: [],
-                        rune_symbol: []
-                      })
+                      .re_etching(pool_business_state!.pool_address, runeName)
                       .then((r) => {
                         if ("Err" in r) {
                           throw new Error(JSON.stringify(r.Err));
                         }
                         if ("Ok" in r) {
-                          alert("Re-Etch Success: " + JSON.stringify(r.Ok));
+                          alert("Re-Etch Success!");
                           window.location.reload();
                         }
                       });
