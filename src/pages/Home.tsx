@@ -4,98 +4,196 @@ import { convertUtxo, createTx, shortenAddress } from "../utils";
 import { useLoginUserBtcUtxo } from "../hooks/use-utxos";
 import { convertMaestroUtxo } from "../api/maestro";
 import { List } from "antd";
-import { useLaunchPools } from "hooks/use-pool";
+import { useLaunchPools, useQueryLaunchPools } from "hooks/use-pool";
 import { Link } from "react-router-dom";
+import { StarFilled, StarOutlined } from "@ant-design/icons";
+import { useLatestBlockHeight } from "hooks/use-mempool";
 
 export function Home() {
   // const { address, paymentAddress, signPsbt, publicKey, paymentPublicKey } =
   //   useLaserEyes();
   // const { data: btcUtxos, isLoading: isLoadingUtxo } = useLoginUserBtcUtxo();
   const { data: launchPools, isLoading: isLoadingPools } = useLaunchPools();
+  const {
+    data: paginatedUpcomingLaunchPools,
+    isLoading: isLoadingUpcomingPaginated,
+  } = useQueryLaunchPools({
+    page: 1,
+    page_size: 20,
+    sort_by: [{TVL: null}],
+    sort_order: [],
+    status_filters: [{ Upcoming: null }],
+    search_text: [],
+  });
 
-  console.log({ launchPools });
+  const {
+    data: paginatedOngoingLaunchPools,
+    isLoading: isLoadingOngoingPaginated,
+  } = useQueryLaunchPools({
+    page: 1,
+    page_size: 20,
+    sort_by: [{TVL: null}],
+    sort_order: [],
+    status_filters: [{ Ongoing: null }],
+    search_text: [],
+  });
+
+    const {
+    data: paginatedCompletedLaunchPools,
+    isLoading: isCompletedLaunchPaginated,
+  } = useQueryLaunchPools({
+    page: 1,
+    page_size: 20,
+    sort_by: [{EndHeight: null}],
+    sort_order: [],
+    status_filters: [{ Completed: null }],
+    search_text: [],
+  });
+
+  const { data: latestBlockHeight } = useLatestBlockHeight();
+
+  console.log({ launchPools, paginatedOngoingLaunchPools });
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen p-4 bg-[#f0f2f5]">
       <Link to="/create" className="mb-8">
         <button
-          onClick={async () => {
-            // try {
-            //   if (!address) {
-            //     alert("Please connect your wallet first.");
-            //     return;
-            //   }
-            //   let create_launch_state =
-            //     await satsmanActor.get_create_launch_info();
-            //   createTx({
-            //     userBtcUtxos: btcUtxos!.map((e) =>
-            //       convertMaestroUtxo(e, paymentPublicKey)
-            //     ),
-            //     poolBtcUtxo: convertUtxo(
-            //       create_launch_state.utxo,
-            //       create_launch_state.key
-            //     ),
-            //     paymentAddress: paymentAddress!,
-            //     poolAddress: create_launch_state.register_pool_address,
-            //     createFee: create_launch_state.create_pool_fee,
-            //     nonce: create_launch_state.nonce,
-            //     signPsbt: signPsbt,
-            //   }).then((e) => {
-            //     console.log("invoke success and txid ", e);
-            //     alert("Create Launch Success: " + e);
-            //     // reload page
-            //     window.location.reload();
-            //   });
-            // } catch (e) {
-            //   console.error(e);
-            //   alert("Create Launch failed: " + (e as Error).message);
-            // }
-          }}
+          onClick={async () => {}}
           className="my-12 px-6 py-3 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
         >
           Create New Launch
         </button>
       </Link>
 
-      <List
-        dataSource={launchPools || []}
-        renderItem={(item) => (
-          <List.Item>
-            <div className="flex flex-col justify-around p-4 bg-white rounded shadow hover:shadow-lg transition-shadow">
-              <h3 className="text-lg font-semibold">
-                Pool Name:
-                <span className="ml-2 text-sm text-blue-400">
-                  {item.launch_rune_etching_args.rune_name}
-                </span>
-              </h3>
-              <h3 className="text-lg font-semibold">
-                Pool Address:
-                <span className="ml-2 text-sm text-blue-400">
-                  {shortenAddress(item.pool_address)}
-                </span>
-              </h3>
-              <h3 className="text-lg font-semibold">
-                Business State:
-                <span className="ml-2 text-sm text-amber-700">
-                  {pool_status_str(item.status)}
-                </span>
-              </h3>
-              <h3 className="text-lg font-semibold">
-                Creator:
-                <span className="ml-2 text-sm text-blue-400">
-                  {shortenAddress(item.creator)}
-                </span>
-              </h3>
-              <a
-                href={`/launch/${item.pool_address}`}
-                className="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              >
-                View Details
-              </a>
-            </div>
-          </List.Item>
-        )}
-      />
+      <div>
+        <h1>On-going Launches</h1>
+        <List
+          loading={isLoadingOngoingPaginated}
+          dataSource={paginatedOngoingLaunchPools?.items || []}
+          renderItem={(item) => (
+            <List.Item>
+              <div className="border border-green-300 rounded-md p-4 mb-4 w-full bg-white text-green-800 shadow hover:shadow-lg transition-shadow">
+                <h1>
+                  {item.launch_plan.rune_name}
+                  {item.featured && <StarFilled style={{ color: "gold" }} />}
+                </h1>
+                <p>
+                  Duration: {item.start_height} - {item.end_height}
+                </p>
+                <p>
+                  Raising Target:{" "}
+                  {Number(item.launch_plan.raising_target_sats) / 1000} K Sats
+                </p>
+                <p>
+                  Received:{" "}
+                  {Number(
+                    item.highest_block_states[0]?.total_raised_btc_balances ?? 0
+                  ) / 1000}{" "}
+                  K Sats
+                </p>
+                <p>{item.user_tunes.length} Satsman</p>
+                <p>
+                  paying{" "}
+                  {item.highest_block_states[0]?.paying_sats_in_current_block ??
+                    0}{" "}
+                  S/B
+                </p>
+                <p>
+                  price:{" "}
+                  {item.highest_block_states[0]?.price_in_current_block ?? 0}{" "}
+                  Sats/Rune
+                </p>
+                <Link to={`/launch/${item.pool_address}`}>
+                  <p className="text-center text-black text-md border-2 mt-1">
+                    Details
+                  </p>
+                </Link>
+              </div>
+            </List.Item>
+          )}
+        />
+      </div>
+
+      <div>
+        <h1>Upcoming Launches</h1>
+        <List
+          loading={isLoadingUpcomingPaginated}
+          dataSource={paginatedUpcomingLaunchPools?.items || []}
+          renderItem={(item) => (
+            <List.Item>
+              <div className="border border-orange-600 rounded-md p-4 mb-4 w-full bg-white text-orange-600 shadow hover:shadow-lg transition-shadow">
+                <h1>
+                  {item.launch_plan.rune_name}
+                  {item.featured && <StarFilled style={{ color: "gold" }} />}
+                </h1>
+                <p>
+                  Duration: {item.start_height} - {item.end_height}
+                </p>
+                <p>Start In: {item.start_height - latestBlockHeight!} blocks</p>
+
+                <p>
+                  Target: {Number(item.launch_plan.raising_target_sats) / 1000}{" "}
+                  K Sats
+                </p>
+                <p>{item.user_tunes.length} Satsman</p>
+                <p>
+                  Deposit{" "}
+                  {Number(
+                    item.highest_block_states[0]
+                      ?.user_total_balance_in_current_block ?? 0
+                  ) / 1000}{" "}
+                  K Sats
+                </p>
+                <Link to={`/launch/${item.pool_address}`}>
+                  <p className="text-center text-black text-md border-2 mt-1">
+                    Details
+                  </p>
+                </Link>
+              </div>
+            </List.Item>
+          )}
+        />
+      </div>
+
+       <div>
+        <h1>Completed Launches</h1>
+        <List
+          loading={isCompletedLaunchPaginated}
+          dataSource={paginatedCompletedLaunchPools?.items || []}
+          renderItem={(item) => (
+            <List.Item>
+              <div className="border border-orange-600 rounded-md p-4 mb-4 w-full bg-white text-orange-600 shadow hover:shadow-lg transition-shadow">
+                <h1>
+                  {item.launch_plan.rune_name}
+                  {item.featured && <StarFilled style={{ color: "gold" }} />}
+                </h1>
+                <p>
+                  Duration: {item.start_height} - {item.end_height}
+                </p>
+                <p>
+                  Target: {Number(item.launch_plan.raising_target_sats) / 1000}{" "}
+                  K Sats
+                </p>
+                <p>{item.user_tunes.length} Satsman</p>
+                <p>
+                  Received {Number(item.highest_block_states[0]?.total_raised_btc_balances!??0) / 1000} K Sats
+                  from {item.user_tunes.length} Satsman
+                </p>
+                <p>
+                  {pool_status_str(item.status)==='LaunchSuccess' ? 'Success' : 'Failed'}
+                </p>
+                <Link to={`/launch/${item.pool_address}`}>
+                  <p className="text-center text-black text-md border-2 mt-1">
+                    Details
+                  </p>
+                </Link>
+              </div>
+            </List.Item>
+          )}
+        />
+      </div>
+
+    
     </div>
   );
 }

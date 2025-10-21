@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { etchActor } from "../canister/etching/actor";
 import { satsmanActor } from "canister/satsman/actor";
+import { PageQuery } from "canister/satsman/service.did";
 
 // export function useGames() {
 
@@ -28,13 +29,55 @@ import { satsmanActor } from "canister/satsman/actor";
 //     })
 // }
 
+export function usePoolBlockStates(pool_address: string | undefined) {
+  return useQuery({
+    queryKey: ["pool-block-states", pool_address],
+    queryFn: async () => {
+      if (!pool_address) {
+        return undefined;
+      }
+      return await satsmanActor.get_launch_pool_block_states(pool_address);
+    },
+    enabled: !!pool_address,
+    refetchInterval: 60 * 1000, // Refetch every 60 seconds
+  });
+}
+
+
 export function useLaunchPools() {
   return useQuery({
     queryKey: ["launch-pools"],
     queryFn: async () => {
       return await satsmanActor.get_launch_pools();
     },
-    refetchInterval: 60 * 1000, // Refetch every 20 seconds
+    refetchInterval: 60 * 1000, // Refetch every 60 seconds
+  });
+}
+
+export function useUserRecords(address: string | undefined) {
+  return useQuery({
+    queryKey: ["user-launch-records", address],
+    queryFn: async () => {
+      if (!address) {
+        return undefined;
+      }
+      return await satsmanActor.get_user_records(address);
+    },
+    enabled: !!address,
+    refetchInterval: 60 * 1000, // Refetch every 60 seconds
+  });
+
+}
+
+export function useQueryLaunchPools(
+  pageQuery: PageQuery
+) {
+  return useQuery({
+    queryKey: ["launch-pools-with-page-query", JSON.stringify(pageQuery)],
+    queryFn: async () => {
+      return await satsmanActor.query_launch(pageQuery);
+    },
+    refetchInterval: 60 * 1000, // Refetch every 60 seconds
   });
 }
 

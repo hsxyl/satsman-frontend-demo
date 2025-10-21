@@ -1,5 +1,14 @@
 import { useLaserEyes } from "@omnisat/lasereyes";
-import { Button, Divider, Form, FormProps, Input, Skeleton } from "antd";
+import {
+  Button,
+  Divider,
+  Form,
+  FormProps,
+  Input,
+  List,
+  Skeleton,
+  Table,
+} from "antd";
 import Search from "antd/es/input/Search";
 import { convertMaestroUtxo } from "api/maestro";
 import { swapActor } from "canister/rich-swap/actor";
@@ -12,22 +21,26 @@ import {
   satsmanActorWithIdentity,
 } from "canister/satsman/actor";
 import {
+  BlockState,
   LaunchpadState,
   PoolBusinessStateView,
 } from "canister/satsman/service.did";
 import {
   useEtchingRequest,
   useLaunchPool,
+  usePoolBlockStates,
   useUserInfoOfLaunch,
 } from "hooks/use-pool";
 import { useLoginUserBtcUtxo, useWalletBtcUtxos } from "hooks/use-utxos";
 // @ts-ignore
 import { useSiwbIdentity } from "oct-ic-siwb-lasereyes-connector";
 import { use, useEffect, useMemo, useState } from "react";
-import { convertUtxo } from "utils";
+import { convertUtxo, shortenAddress } from "utils";
 import { addLiquidityTx } from "utils/tx-helper/addLp";
 import { topupTx } from "utils/tx-helper/topup";
 import { withdrawTx } from "utils/tx-helper/withdraw";
+import { Line } from '@ant-design/charts';
+
 
 export function Launch() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -42,13 +55,19 @@ export function Launch() {
     error,
   } = useLaunchPool(pool_address);
 
+  const {
+    data: blockStats,
+    error: blockStatsError,
+    isLoading: isLoadingBlockStats,
+  } = usePoolBlockStates(pool_address);
+
   const loading = useMemo(() => {
-    return isLoading;
-  }, [isLoading]);
+    return isLoading && isLoadingBlockStats;
+  }, [isLoading, isLoadingBlockStats]);
 
   const anyError = useMemo(() => {
-    return error;
-  }, [error]);
+    return error || blockStatsError;
+  }, [error, blockStatsError]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -68,17 +87,326 @@ export function Launch() {
     <div className="flex flex-col items-center min-h-screen p-4 bg-[#f0f2f5]">
       {/* {status_number >= 3 && ( */}
       <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
-        <LaunchManager pool_business_state={pool_business_state![0]!} />
+        {pool_business_state![0] && (
+          <LaunchInfo pool_business_state={pool_business_state![0]!} />
+        )}
       </div>
-      {/* )} */}
-      {status_number > 5 && (
+
+      {status_number >= 2 && (
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
-          <LaunchSuccess pool_business_state={pool_business_state![0]!} />
+          <PriceLineChart block_states={blockStats??[]} />
         </div>
       )}
-      {status_number >= 4 && (
+
+      {status_number >= 1 && (
+        <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
+          <UserInfo pool_business_state={pool_business_state![0]!} />
+        </div>
+      )}
+      {status_number >= 1 && (
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
           <UserManager pool_business_state={pool_business_state![0]!} />
+        </div>
+      )}
+      {status_str === "Ongoing" && (
+        <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
+          <OngoingUserTable pool_business_state={pool_business_state![0]!} />
+        </div>
+      )}
+      {status_number > 2 && (
+        <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
+          <EndUserTable pool_business_state={pool_business_state![0]!} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PriceLineChart({
+  block_states,
+}: {
+  block_states: BlockState[]
+}) {
+
+  const data =  block_states.map((e) => {
+    return {
+      block: Number(e.block_height),
+      price: Number(e.price_in_current_block)
+    }
+  })
+
+  const config = {
+    title: {
+      visible: true,
+      text: '配置折线数据点样式',
+    },
+    description: {
+      visible: true,
+      text: '自定义配置趋势线上数据点的样式',
+    },
+    padding: 'auto',
+    forceFit: true,
+    data,
+    xField: 'block',
+    yField: 'price',
+    label: {
+      visible: true,
+      type: 'point',
+    },
+    point: {
+      visible: true,
+      size: 5,
+      shape: 'diamond',
+      style: {
+        fill: 'white',
+        stroke: '#2593fc',
+        lineWidth: 2,
+      },
+    },
+  };
+
+  return <Line {...config} />;
+
+}
+
+
+function EndUserTable({
+  pool_business_state,
+}: {
+  pool_business_state: PoolBusinessStateView;
+}) {
+  const last_state = pool_business_state.highest_block_states[0];
+  const user_accounts = last_state?.user_accounts || [];
+  const columns = [
+    {
+      title: "Statsman",
+      dataIndex: "statsman",
+      key: "statsman",
+    },
+    {
+      title: "Deposited",
+      dataIndex: "deposited",
+      key: "deposited",
+    },
+    {
+      title: "Contributed",
+      dataIndex: "contributed",
+      key: "contributed",
+    },
+    {
+      title: "Received",
+      dataIndex: "received",
+      key: "received",
+    },
+    {
+      title: "Avg Price",
+      dataIndex: "avg_price",
+      key: "avg_price",
+    },
+  ];
+  return (
+    <div>
+      <Table
+        dataSource={pool_business_state.user_tunes.map((e) => {
+          const account = user_accounts.find((ua) => ua[0] === e[0])?.[1];
+          return {
+            statsman: shortenAddress(e[0]),
+            deposited:
+              user_accounts.find((ua) => ua[0] === e[0])?.[1].btc_balance || 0n,
+            contributed: account?.total_contributed_btc || 0n,
+            received: account?.minted_rune_amount || 0n,
+            avg_price:
+              Number(account?.total_contributed_btc ?? 0) /
+              Number(account?.minted_rune_amount ?? 1),
+          };
+        })}
+        columns={columns}
+      />
+    </div>
+  );
+}
+
+function OngoingUserTable({
+  pool_business_state,
+}: {
+  pool_business_state: PoolBusinessStateView;
+}) {
+  const last_state = pool_business_state.highest_block_states[0];
+  const user_accounts = last_state?.user_accounts || [];
+  const columns = [
+    {
+      title: "Statsman",
+      dataIndex: "statsman",
+      key: "statsman",
+    },
+    {
+      title: "Deposited",
+      dataIndex: "deposited",
+      key: "deposited",
+    },
+    {
+      title: "Power",
+      dataIndex: "power",
+      key: "power",
+    },
+    {
+      title: "Paying",
+      dataIndex: "paying",
+      key: "paying",
+    },
+    {
+      title: "Received",
+      dataIndex: "received",
+      key: "received",
+    },
+  ];
+  return (
+    <div>
+      <Table
+        dataSource={pool_business_state.user_tunes.map((e) => {
+          const account = user_accounts.find((ua) => ua[0] === e[0])?.[1];
+          return {
+            statsman: shortenAddress(e[0]),
+            deposited:
+              user_accounts.find((ua) => ua[0] === e[0])?.[1].btc_balance || 0n,
+            power: e[1],
+            paying: account?.total_contributed_btc || 0n,
+            received: account?.minted_rune_amount || 0n,
+          };
+        })}
+        columns={columns}
+      />
+    </div>
+  );
+}
+
+function UpcomingHint({
+  pool_business_state,
+}: {
+  pool_business_state: PoolBusinessStateView;
+}) {
+  let highest_block_state = pool_business_state.highest_block_states[0];
+  const columns = [
+    {
+      title: "Statsman",
+      dataIndex: "statsman",
+      key: "statsman",
+    },
+    {
+      title: "Deposited",
+      dataIndex: "deposited",
+      key: "deposited",
+    },
+    {
+      title: "Power",
+      dataIndex: "power",
+      key: "power",
+    },
+    {
+      title: "About to Pay",
+      dataIndex: "about_to_pay",
+      key: "about_to_pay",
+    },
+    {
+      title: "Update Height",
+      dataIndex: "update_height",
+      key: "update_height",
+    },
+  ];
+
+  const last_state = pool_business_state.highest_block_states[0];
+  const user_accounts = last_state?.user_accounts || [];
+  const auction_duration =
+    pool_business_state.end_height - pool_business_state.start_height + 1;
+
+  return (
+    <div>
+      <h1>Upcoming Hint</h1>
+      <p>
+        {highest_block_state?.total_raised_btc_balances ?? 0n} K S from
+        {highest_block_state?.user_accounts.length ?? 0} Satsmen, avg power
+        {pool_business_state.user_tunes.reduce((acc, e) => acc + e[1], 0) /
+          pool_business_state.user_tunes.length}
+        %, about to pay{" "}
+        {highest_block_state?.paying_sats_in_current_block ?? 0n} K S/B at price
+        of {highest_block_state?.price_in_current_block ?? 0n} S/R.
+      </p>
+      <Table
+        dataSource={pool_business_state.user_tunes.map((e) => {
+          const account = user_accounts.find((ua) => ua[0] === e[0])?.[1];
+          return {
+            statsman: shortenAddress(e[0]),
+            deposited:
+              user_accounts.find((ua) => ua[0] === e[0])?.[1].btc_balance || 0n,
+            power: e[1],
+            about_to_pay: account?.btc_balance ?? 0 / auction_duration,
+            update_height: account?.last_update_block || 0,
+          };
+        })}
+        columns={columns}
+      />
+    </div>
+  );
+}
+
+function UserInfo({
+  pool_business_state,
+}: {
+  pool_business_state: PoolBusinessStateView;
+}) {
+  const { address, paymentAddress, signPsbt, publicKey, paymentPublicKey } =
+    useLaserEyes();
+  let highest_block_state = pool_business_state.highest_block_states[0];
+  let account = useMemo(() => {
+    if (!address) {
+      return undefined;
+    }
+    return highest_block_state?.user_accounts.find(
+      (e) => e[0] === address
+    )?.[1];
+  }, [address]);
+  const status_str = pool_status_str(pool_business_state.status);
+  return (
+    <div className="flex flex-row">
+      {status_str === "Upcoming" ? (
+        <UpcomingHint pool_business_state={pool_business_state} />
+      ) : (
+        <div className="flex flex-row">
+          <div className="flex flex-col">
+            <p>All Satsman</p>
+            <p>
+              Deposited:{" "}
+              {highest_block_state?.user_total_balance_in_current_block}
+            </p>
+            <p>Paid: {highest_block_state?.total_raised_btc_balances}</p>
+            <p>Received: {highest_block_state?.total_minted_rune}</p>
+            <p>
+              Past Price:{" "}
+              {Number(highest_block_state?.total_raised_btc_balances ?? 0n) /
+                Number(highest_block_state?.total_minted_rune ?? NaN)}
+            </p>
+            <p>
+              Remain:{" "}
+              {highest_block_state?.user_total_balance_in_current_block ??
+                0n - (highest_block_state?.total_raised_btc_balances ?? 0n)}
+            </p>
+            <p>Paying: {highest_block_state?.paying_sats_in_current_block}</p>
+            <p>Curr.Price: {highest_block_state?.price_in_current_block}</p>
+          </div>
+          {address && account && (
+            <div className="ml-16 flex flex-col">
+              <p>My Satsman</p>
+              <p>Deposit: {account.btc_balance}</p>
+              <p>Paid: {account.total_contributed_btc}</p>
+              <p>Received: {account.minted_rune_amount}</p>
+              <p>
+                Past Price:{" "}
+                {Number(account.total_contributed_btc) /
+                  Number(account.minted_rune_amount)}
+              </p>
+              <p>Remain: {account.btc_balance - account.used_btc_balance}</p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -239,7 +567,7 @@ function UserManager({
                   withdrawBtcAmount:
                     account!.btc_balance -
                     account!.used_btc_balance +
-                    account!.referral_reward,
+                    BigInt(Math.floor(account!.referral_reward)),
                   withdrawRuneAmount: account!.minted_rune_amount,
                 })
                   .then((e) => {
@@ -271,7 +599,7 @@ function UserManager({
           placeholder={"Referral Code"}
         />
         <Button
-          disabled={status_str !== "Processing"}
+          disabled={status_str !== "Ongoing" && status_str !== "Upcoming"}
           loading={calling}
           onClick={async () => {
             try {
@@ -324,7 +652,7 @@ function UserManager({
         />
 
         <Button
-          disabled={status_str !== "Processing"}
+          disabled={status_str !== "Ongoing" && status_str !== "Upcoming"}
           loading={calling}
           onClick={async () => {
             try {
@@ -387,7 +715,8 @@ function UserManager({
 
         <Button
           disabled={
-            !userInfoOfLaunch?.account?.length || status_str !== "Processing"
+            !userInfoOfLaunch?.account?.length ||
+            (status_str !== "Ongoing" && status_str !== "Upcoming")
           }
           onClick={async () => {
             try {
@@ -413,40 +742,40 @@ function UserManager({
   );
 }
 
-function LaunchManager({
-  pool_business_state,
-}: {
-  pool_business_state: PoolBusinessStateView;
-}) {
-  const status_number = pool_status_number(pool_business_state.status);
-  console.log({ status_number });
-  const status_str = pool_status_str(pool_business_state.status);
+// function LaunchManager({
+//   pool_business_state,
+// }: {
+//   pool_business_state: PoolBusinessStateView;
+// }) {
+//   const status_number = pool_status_number(pool_business_state.status);
+//   console.log({ status_number });
+//   const status_str = pool_status_str(pool_business_state.status);
 
-  return (
-    <div>
-      {/* {status_number >= 4 ? ( */}
-      <LaunchInfo pool_business_state={pool_business_state} />
-      {/* ) : (
-        <div>
-          <p>Launch Info</p>
-          <p>{status_str}</p>
-          <p>{pool_business_state.launch_rune_etching_args.rune_name}</p>
-          <p>{pool_business_state.start_block}</p>
-          <p>{pool_business_state.end_block}</p>
+//   return (
+//     <div>
+//       {/* {status_number >= 4 ? ( */}
+//       <LaunchInfo pool_business_state={pool_business_state} />
+//       {/* ) : (
+//         <div>
+//           <p>Launch Info</p>
+//           <p>{status_str}</p>
+//           <p>{pool_business_state.launch_rune_etching_args.rune_name}</p>
+//           <p>{pool_business_state.start_block}</p>
+//           <p>{pool_business_state.end_block}</p>
 
-        </div>
-        // <StartLaunch pool_address={pool_business_state.pool_address} />
-      )} */}
-    </div>
-  );
-}
+//         </div>
+//         // <StartLaunch pool_address={pool_business_state.pool_address} />
+//       )} */}
+//     </div>
+//   );
+// }
 
 function LaunchSuccess({
   pool_business_state,
 }: {
   pool_business_state: PoolBusinessStateView;
 }) {
-  const rune_name = pool_business_state.launch_rune_etching_args.rune_name;
+  const rune_name = pool_business_state.launch_plan.rune_name;
   const rune_id = pool_business_state.rune_id[0]!;
   const [launchSwapPool, setLaunchSwapPool] = useState<PoolBasic | undefined>(
     undefined
@@ -507,7 +836,7 @@ function LaunchSuccess({
                   let liquidityOffer = await swapActor
                     .pre_add_liquidity(launchSwapPool!.address, {
                       id: rune_id,
-                      value: pool_business_state.rune_amount_for_lp[0]!,
+                      value: pool_business_state.rune_amount_for_lp, //rune_amount_for_lp[0]!,
                     })
                     .then((res) => {
                       if ("Ok" in res) {
@@ -528,7 +857,7 @@ function LaunchSuccess({
                       pool_business_state.btc_amount_for_lp,
                     runeid: pool_business_state.rune_id[0]!,
                     runeAmountForAddLiquidity:
-                      pool_business_state.rune_amount_for_lp[0]!,
+                      pool_business_state.rune_amount_for_lp,
                     launchPoolUtxo: convertUtxo(pool_state.utxo, key),
                     paymentAddress: paymentAddress,
                     swapPoolAddress: launchSwapPool!.address,
@@ -580,7 +909,7 @@ function LaunchSuccess({
             Btc Amount for Lp: {pool_business_state.btc_amount_for_lp}
           </p>
           <p className="my-1">
-            Rune Amount for Lp: {pool_business_state.rune_amount_for_lp[0]}
+            Rune Amount for Lp: {pool_business_state.rune_amount_for_lp}
           </p>
           {lpStatus()}
         </div>
@@ -592,107 +921,61 @@ function LaunchSuccess({
 function LaunchInfo({
   pool_business_state,
 }: {
-  pool_business_state?: PoolBusinessStateView;
+  pool_business_state: PoolBusinessStateView;
 }) {
-  const [runeName, setRuneName] = useState<string>("");
-  const [calling, setCalling] = useState<boolean>(false);
-  const { identity } = useSiwbIdentity();
   let status_str = pool_status_str(pool_business_state?.status!);
   let last_block_state = pool_business_state?.highest_block_states?.[0];
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Launch Info</h2>
-      <Divider />
-      <h3 className="text-lg font-semibold mb-2">Basic Info</h3>
-      <div>
-        <p>
-          Status: {status_str}{" "}
-          {status_str === "EtchFailed" && (
-            <span className="text-red-500">
-              ( {Object.entries(pool_business_state!.status)[0]![1]};)
-            </span>
-          )}
-        </p>
-        {status_str === "EtchFailed" && (
-          <div>
-            <div className="mb-4 flex flex-col items-center">
-              <p className="">Please use new rune name:</p>
-              <input
-                value={runeName}
-                onChange={(e) => {
-                  setRuneName(e.target.value);
-                }}
-                type="text"
-                className="border border-gray-300 rounded px-2 py-1 w-64"
-              />
-              <a
-                href="https://testnet4.unisat.io/runes/inscribe?tab=etch"
-                target="_blank"
-                className="text-blue-500 underline ml-4"
-              >
-                Find Available Rune Name On Unisat
-              </a>
-              <Button
-                loading={calling}
-                onClick={async () => {
-                  setCalling(true);
-                  try {
-                    await satsmanActorWithIdentity(identity!)
-                      .re_etching(pool_business_state!.pool_address, runeName)
-                      .then((r) => {
-                        if ("Err" in r) {
-                          throw new Error(JSON.stringify(r.Err));
-                        }
-                        if ("Ok" in r) {
-                          alert("Re-Etch Success!");
-                          window.location.reload();
-                        }
-                      });
-                  } catch (e) {
-                    console.log("Re-Etch Error", e);
-                    alert("Re-Etch failed: " + (e as Error).message);
-                  } finally {
-                    setCalling(false);
-                  }
-                }}
-              >
-                Re-Etch
-              </Button>
-            </div>
-          </div>
-        )}
-        <p>Start Block: {pool_business_state?.start_height}</p>
-        <p>End Block: {pool_business_state?.end_height}</p>
-        <p>
-          Raising Target: {pool_business_state?.launch_args.raising_target_sats}
-        </p>
-        <p>Total Raised Btc: {last_block_state?.total_raised_btc_balances}</p>
-        <p>Total Distributed Rune: {last_block_state?.total_minted_rune}</p>
-      </div>
-      <Divider />
-      <h3 className="text-lg font-semibold">Rune Info</h3>
-      {status_str === "Etching" ? (
-        <EtchProcess pool_business_state={pool_business_state!} />
-      ) : (
-        <RuneInfo pool_business_state={pool_business_state!}></RuneInfo>
+      <p>{pool_business_state.launch_plan.rune_name}</p>
+      <p>Dev {pool_business_state.creator}</p>
+      <p>
+        Token for Auction: {pool_business_state.launch_plan.token_for_auction}
+      </p>
+      <p>Token for Dex LP: {pool_business_state.launch_plan.token_for_lp}</p>
+      <p>
+        {
+          pool_business_state.launch_raised_btc_share
+            .creator_distribution_percentage
+        }
+        % will be received by{" "}
+        {pool_business_state.launch_plan.income_distribution.length} addresses
+      </p>
+      {pool_business_state.launch_plan.income_distribution.map(
+        (item, index) => (
+          <p key={index}>
+            {" "}
+            - {item.percentage}% will be received by{" "}
+            {shortenAddress(item.address)} ({item.label})
+          </p>
+        )
       )}
+      <p>
+        Duration: {pool_business_state.start_height} -{" "}
+        {pool_business_state.end_height}
+      </p>
+      <p>Status: {status_str}</p>
+      <p>
+        Rasing Target: {Number(pool_business_state.raising_target) / 1000} K
+        Sats
+      </p>
     </div>
   );
 }
 
-function RuneInfo({
-  pool_business_state,
-}: {
-  pool_business_state: PoolBusinessStateView;
-}) {
-  return (
-    <div>
-      <p>Rune Name: {pool_business_state.launch_rune_etching_args.rune_name}</p>
-      <p>Rune Id: {pool_business_state.rune_id}</p>
-      <p>Rune Total Supply: {pool_business_state.rune_premine}</p>
-    </div>
-  );
-}
+// function RuneInfo({
+//   pool_business_state,
+// }: {
+//   pool_business_state: PoolBusinessStateView;
+// }) {
+//   return (
+//     <div>
+//       <p>Rune Name: {pool_business_state.launch_rune_etching_args.rune_name}</p>
+//       <p>Rune Id: {pool_business_state.rune_id}</p>
+//       <p>Rune Total Supply: {pool_business_state.rune_premine}</p>
+//     </div>
+//   );
+// }
 
 type FieldType = {
   start_block?: number;
@@ -837,85 +1120,85 @@ type FieldType = {
 //   );
 // }
 
-function EtchProcess({
-  pool_business_state,
-}: {
-  pool_business_state: PoolBusinessStateView;
-}) {
-  const { identity } = useSiwbIdentity();
-  const [finalizing, setFinalizing] = useState<boolean>(false);
+// function EtchProcess({
+//   pool_business_state,
+// }: {
+//   pool_business_state: PoolBusinessStateView;
+// }) {
+//   const { identity } = useSiwbIdentity();
+//   const [finalizing, setFinalizing] = useState<boolean>(false);
 
-  const commit_txid = pool_business_state.etch_commit_tx[0] || undefined;
+//   const commit_txid = pool_business_state.etch_commit_tx[0] || undefined;
 
-  const {
-    data: etchingRequest,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    isFetching,
-  } = useEtchingRequest(commit_txid);
+//   const {
+//     data: etchingRequest,
+//     isLoading,
+//     isError,
+//     error,
+//     refetch,
+//     isFetching,
+//   } = useEtchingRequest(commit_txid);
 
-  console.log({ etchingRequest });
+//   console.log({ etchingRequest });
 
-  if (!commit_txid) {
-    return <div>No Etch Process</div>;
-  }
+//   if (!commit_txid) {
+//     return <div>No Etch Process</div>;
+//   }
 
-  if (isLoading) {
-    return <Skeleton />;
-  }
+//   if (isLoading) {
+//     return <Skeleton />;
+//   }
 
-  if (isError) {
-    return <div>Error loading etch process: {error.message}</div>;
-  }
+//   if (isError) {
+//     return <div>Error loading etch process: {error.message}</div>;
+//   }
 
-  if (!etchingRequest) {
-    return <div>No Etching Request Found</div>;
-  }
+//   if (!etchingRequest) {
+//     return <div>No Etching Request Found</div>;
+//   }
 
-  if (!identity) {
-    return <div>No Siwb Identity Found</div>;
-  }
+//   if (!identity) {
+//     return <div>No Siwb Identity Found</div>;
+//   }
 
-  const status = Object.keys(etchingRequest![0]!.status)[0];
-  const isFinal = status === "Final";
-  const poolStatusStr = pool_status_str(pool_business_state.status);
+//   const status = Object.keys(etchingRequest![0]!.status)[0];
+//   const isFinal = status === "Final";
+//   const poolStatusStr = pool_status_str(pool_business_state.status);
 
-  return (
-    <div className="mt-2 text-sm font-medium text-gray-700 flex flex-col items-start">
-      <h2 className="text-lg font-bold">Etching in Progress</h2>
-      <p>Rune Name: {etchingRequest![0]!.etching_args.rune_name}</p>
-      <p>Premine: {etchingRequest![0]!.etching_args.premine}</p>
-      <p>Commit ID: {commit_txid}</p>
-      <p>Reveal ID: {etchingRequest![0]!.reveal_txid}</p>
-      <p className="flex">
-        Status:{" "}
-        <span
-          className={isFinal ? "text-green-500 ml-1" : "text-yellow-500 ml-1"}
-        >
-          {Object.keys(etchingRequest![0]!.status)[0]}
-        </span>
-      </p>
-      <p>
-        Create At:{" "}
-        {new Date(
-          Number(etchingRequest![0]!.time_at / BigInt(1000000))
-        ).toLocaleString()}
-      </p>
+//   return (
+//     <div className="mt-2 text-sm font-medium text-gray-700 flex flex-col items-start">
+//       <h2 className="text-lg font-bold">Etching in Progress</h2>
+//       <p>Rune Name: {etchingRequest![0]!.etching_args.rune_name}</p>
+//       <p>Premine: {etchingRequest![0]!.etching_args.premine}</p>
+//       <p>Commit ID: {commit_txid}</p>
+//       <p>Reveal ID: {etchingRequest![0]!.reveal_txid}</p>
+//       <p className="flex">
+//         Status:{" "}
+//         <span
+//           className={isFinal ? "text-green-500 ml-1" : "text-yellow-500 ml-1"}
+//         >
+//           {Object.keys(etchingRequest![0]!.status)[0]}
+//         </span>
+//       </p>
+//       <p>
+//         Create At:{" "}
+//         {new Date(
+//           Number(etchingRequest![0]!.time_at / BigInt(1000000))
+//         ).toLocaleString()}
+//       </p>
 
-      {isFinal ? (
-        <Button>Etch Finalized!</Button>
-      ) : (
-        <Button
-          loading={isFetching}
-          onClick={() => {
-            refetch();
-          }}
-        >
-          Sync
-        </Button>
-      )}
-    </div>
-  );
-}
+//       {isFinal ? (
+//         <Button>Etch Finalized!</Button>
+//       ) : (
+//         <Button
+//           loading={isFetching}
+//           onClick={() => {
+//             refetch();
+//           }}
+//         >
+//           Sync
+//         </Button>
+//       )}
+//     </div>
+//   );
+// }

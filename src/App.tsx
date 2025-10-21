@@ -9,6 +9,8 @@ import { LoadingOrError } from "./components/LoadingOrError";
 import { Launch } from "pages/Launch";
 import { CreateLaunch } from "pages/CreateLaunch";
 import { useRee } from "@omnity/ree-client-ts-sdk";
+import { AllLaunch } from "pages/AllLaunch";
+import { UserProfile } from "pages/UserProfile";
 
 function renderError({ error }: FallbackProps) {
   return <LoadingOrError error={error} />;
@@ -27,6 +29,8 @@ export function App() {
             <Route element={<Home />} index={true} />
             <Route element={<CreateLaunch />} path="/create" />
             <Route element={<Launch />} path="/launch/:pool_address" />
+            <Route element={<AllLaunch />} path="/all_launch" />
+            <Route element={<UserProfile />} path="/profile/:user_address" />
           </Routes>
           <ConnectWalletModal />
         </div>

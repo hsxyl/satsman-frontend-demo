@@ -16,6 +16,14 @@ import {
   SATSMAN_EXCHANGE_ID,
 } from "canister/satsman/actor";
 
+declare global {
+    interface BigInt {
+        toJSON(): string;
+    }
+}
+
+BigInt.prototype.toJSON = function () { return this.toString() }
+
 const MAX_RETRIES = 1;
 const queryClient = new QueryClient({
   defaultOptions: {
