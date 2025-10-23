@@ -299,7 +299,7 @@ export function CreateLaunch() {
         <h1 className="text-2xl my-4">Launch Plan</h1>
 
         <div className="my-2">
-          <span className="mr-2">meme template</span>
+          <span className="mr-2">fair launch</span>
           <Switch checked={isMeme} onChange={setIsMeme} />
         </div>
 
