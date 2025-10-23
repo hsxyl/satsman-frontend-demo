@@ -27,6 +27,7 @@ import {
 } from "canister/satsman/service.did";
 import {
   useEtchingRequest,
+  useGetPoolWithStateAndKey,
   useLaunchPool,
   usePoolBlockStates,
   useUserInfoOfLaunch,
@@ -40,6 +41,8 @@ import { addLiquidityTx } from "utils/tx-helper/addLp";
 import { topupTx } from "utils/tx-helper/topup";
 import { withdrawTx } from "utils/tx-helper/withdraw";
 import { Line } from '@ant-design/charts';
+import { StarFilled } from "@ant-design/icons";
+import { useRee } from "@omnity/ree-client-ts-sdk";
 
 
 export function Launch() {
@@ -54,6 +57,7 @@ export function Launch() {
     isLoading,
     error,
   } = useLaunchPool(pool_address);
+  console.log({ pool_business_state });
 
   const {
     data: blockStats,
@@ -92,18 +96,18 @@ export function Launch() {
         )}
       </div>
 
-      {status_number >= 2 && (
+      {status_number >= 1 && (
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
           <PriceLineChart block_states={blockStats??[]} />
         </div>
       )}
 
-      {status_number >= 1 && (
+      {status_number >= 0 && (
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
           <UserInfo pool_business_state={pool_business_state![0]!} />
         </div>
       )}
-      {status_number >= 1 && (
+      {status_number >= 0 && (
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
           <UserManager pool_business_state={pool_business_state![0]!} />
         </div>
@@ -113,7 +117,7 @@ export function Launch() {
           <OngoingUserTable pool_business_state={pool_business_state![0]!} />
         </div>
       )}
-      {status_number > 2 && (
+      {status_number > 1 && (
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
           <EndUserTable pool_business_state={pool_business_state![0]!} />
         </div>
@@ -356,8 +360,11 @@ function UserInfo({
 }) {
   const { address, paymentAddress, signPsbt, publicKey, paymentPublicKey } =
     useLaserEyes();
-  let highest_block_state = pool_business_state.highest_block_states[0];
-  let account = useMemo(() => {
+
+  const {data: poolState} = useGetPoolWithStateAndKey(pool_business_state.pool_address)
+  
+  const highest_block_state = pool_business_state.highest_block_states[0];
+  const account = useMemo(() => {
     if (!address) {
       return undefined;
     }
@@ -365,6 +372,15 @@ function UserInfo({
       (e) => e[0] === address
     )?.[1];
   }, [address]);
+
+  const account_balance_in_pool_state = useMemo(() => {
+    if (!address || !poolState) {
+      return 0n;
+    } 
+
+    return poolState?.[0]?.[0].user_balances.find((e) => e[0] === address)?.[1] || 0n;
+  }, [address, poolState]);
+
   const status_str = pool_status_str(pool_business_state.status);
   return (
     <div className="flex flex-row">
@@ -396,7 +412,7 @@ function UserInfo({
           {address && account && (
             <div className="ml-16 flex flex-col">
               <p>My Satsman</p>
-              <p>Deposit: {account.btc_balance}</p>
+              <p>Deposit: {account.btc_balance}{account_balance_in_pool_state && account_balance_in_pool_state>account.btc_balance && ` (${account_balance_in_pool_state - account.btc_balance} unconfirmed)`}</p>
               <p>Paid: {account.total_contributed_btc}</p>
               <p>Received: {account.minted_rune_amount}</p>
               <p>
@@ -442,6 +458,7 @@ function UserManager({
   const [calling, setCalling] = useState<boolean>(false);
   const [tune, setTune] = useState<number | undefined>(userInfoOfLaunch?.tune);
   const status_str = pool_status_str(pool_business_state.status);
+  const { createTransaction } = useRee();
 
   useEffect(() => {
     setReferralCode(userInfoOfLaunch?.referred_by_code?.[0]);
@@ -671,6 +688,12 @@ function UserManager({
               }
               let pool_state = pool_state_res[0][0]!;
               let key = pool_state_res[0][1]!;
+
+              // const tx = await createTransaction();
+              // tx.addIntention
+
+
+
               topupTx({
                 userBtcUtxos: btcUtxos!.map((e) =>
                   convertMaestroUtxo(e, paymentPublicKey)
@@ -927,7 +950,7 @@ function LaunchInfo({
   let last_block_state = pool_business_state?.highest_block_states?.[0];
   return (
     <div>
-      <p>{pool_business_state.launch_plan.rune_name}</p>
+      <p>{pool_business_state.launch_plan.rune_name} {pool_business_state.featured &&<StarFilled  style={{color: "gold"}}/>}</p>
       <p>Dev {pool_business_state.creator}</p>
       <p>
         Token for Auction: {pool_business_state.launch_plan.token_for_auction}
@@ -935,8 +958,7 @@ function LaunchInfo({
       <p>Token for Dex LP: {pool_business_state.launch_plan.token_for_lp}</p>
       <p>
         {
-          pool_business_state.launch_raised_btc_share
-            .creator_distribution_percentage
+          pool_business_state.launch_plan.income_distribution.map(e=>e.percentage).reduce((a, b) => a + b, 0)
         }
         % will be received by{" "}
         {pool_business_state.launch_plan.income_distribution.length} addresses

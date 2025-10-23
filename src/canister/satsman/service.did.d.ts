@@ -6,6 +6,7 @@ export interface Account {
   'withdraw_txid' : [] | [string],
   'receive_rune_in_current_block' : bigint,
   'last_update_block' : number,
+  'tune' : number,
   'total_contributed_btc' : bigint,
   'pay_in_current_block' : bigint,
   'btc_balance' : bigint,
@@ -15,6 +16,12 @@ export interface Account {
   'used_btc_balance' : bigint,
   'minted_rune_amount' : bigint,
   'referral_reward_in_current_block' : number,
+}
+export interface BlockAggregateData {
+  'total_paying_sats' : bigint,
+  'total_minted_rune' : bigint,
+  'total_ongoing_launch_pools' : number,
+  'total_paying_users' : number,
 }
 export interface BlockState {
   'paying_sats_in_current_block' : bigint,
@@ -26,6 +33,20 @@ export interface BlockState {
   'total_raised_btc_balances' : bigint,
 }
 export interface CoinBalance { 'id' : string, 'value' : bigint }
+export interface Config {
+  'maximum_raising_target' : bigint,
+  'minimum_top_up_sats' : bigint,
+  'maximum_start_height_offset' : number,
+  'exchange_fee_percentage' : number,
+  'finalize_threshold' : number,
+  'launch_span_options' : Uint32Array | number[],
+  'referral_bonus_percentage' : number,
+  'minimum_auction_income_for_lp_percentage' : number,
+  'minimum_raising_target' : bigint,
+  'maximum_top_up_sats' : bigint,
+  'create_fee_sats' : bigint,
+  'minimum_start_height_offset' : number,
+}
 export interface CreateLaunchState {
   'create_pool_fee' : bigint,
   'min_start_block_height' : number,
@@ -70,6 +91,7 @@ export interface ExchangeState {
   'user_referral_codes' : Array<[string, string]>,
   'is_task_running' : boolean,
   'code_of_users' : Array<[string, string]>,
+  'sync_block_height' : number,
 }
 export interface ExecuteTxArgs {
   'zero_confirmed_tx_queue_length' : number,
@@ -82,6 +104,14 @@ export type Filter = { 'Ongoing' : null } |
   { 'Completed' : null } |
   { 'Upcoming' : null };
 export interface GetPoolInfoArgs { 'pool_address' : string }
+export interface HomePageBlockData {
+  'ongoing_launches_count' : number,
+  'total_release_rune_amount' : bigint,
+}
+export interface HomePageSatsmanData {
+  'total_btc_raised' : bigint,
+  'total_satsman_count' : number,
+}
 export interface IncomeDistributionItem {
   'label' : string,
   'address' : string,
@@ -106,6 +136,8 @@ export interface IntentionSet {
 }
 export interface LaunchPlan {
   'start_height' : number,
+  'income_for_lp_percentage' : number,
+  'is_meme_template' : boolean,
   'social_info' : SocialInfo,
   'token_for_lp' : string,
   'rune_name' : string,
@@ -116,12 +148,6 @@ export interface LaunchPlan {
   'token_for_auction' : string,
   'rune_id' : string,
   'income_distribution' : Array<IncomeDistributionItem>,
-}
-export interface LaunchRaisedBtcShare {
-  'creator_distribution_percentage' : number,
-  'exchange_fee_percentage' : number,
-  'referral_bonus_percentage' : number,
-  'lp_percentage' : number,
 }
 export interface LaunchpadState {
   'user_balances' : Array<[string, bigint]>,
@@ -150,6 +176,7 @@ export interface Page {
 }
 export interface PageQuery {
   'sort_by' : [] | [SortBy],
+  'featured_first' : boolean,
   'page_size' : number,
   'status_filters' : [] | [Filter],
   'page' : number,
@@ -167,13 +194,14 @@ export interface PoolBusinessStateView {
   'btc_amount_for_lp' : bigint,
   'raising_target' : bigint,
   'key_derivation_path' : Array<Uint8Array | number[]>,
+  'exchange_fee_percentage' : number,
+  'referral_bonus_percentage' : number,
   'highest_block_states' : [] | [BlockState],
   'user_tunes' : Array<[string, number]>,
   'rune_amount_for_lp' : bigint,
   'rune_amount_for_launch' : bigint,
   'pool_address' : string,
   'launch_plan' : LaunchPlan,
-  'launch_raised_btc_share' : LaunchRaisedBtcShare,
   'add_lp_txid' : [] | [string],
   'rune_id' : string,
 }
@@ -188,8 +216,7 @@ export interface PoolInfo {
   'nonce' : bigint,
   'utxos' : Array<Utxo>,
 }
-export type PoolStatus = { 'Init' : null } |
-  { 'AddedLp' : null } |
+export type PoolStatus = { 'AddedLp' : null } |
   { 'Ongoing' : null } |
   { 'LaunchSuccess' : null } |
   { 'AddingLp' : null } |
@@ -238,8 +265,13 @@ export interface _SERVICE {
   'feature_pool' : ActorMethod<[string], Result_1>,
   'generate_referral_code' : ActorMethod<[string], string>,
   'get_block_state' : ActorMethod<[string], Array<BlockState>>,
+  'get_config' : ActorMethod<[], Config>,
   'get_create_launch_info' : ActorMethod<[], CreateLaunchState>,
   'get_exchange_state' : ActorMethod<[], ExchangeState>,
+  'get_home_page_block_aggregation_data' : ActorMethod<
+    [number, number],
+    [Array<[number, HomePageBlockData]>, HomePageSatsmanData]
+  >,
   'get_launch_pool' : ActorMethod<[string], [] | [PoolBusinessStateView]>,
   'get_launch_pool_block_states' : ActorMethod<[string], Array<BlockState>>,
   'get_launch_pools' : ActorMethod<[], Array<PoolBusinessStateView>>,
@@ -253,7 +285,10 @@ export interface _SERVICE {
   'get_user_records' : ActorMethod<[string], UserLaunchRecordPools>,
   'new_block' : ActorMethod<[NewBlockInfo], Result_1>,
   'new_pool' : ActorMethod<[string], string>,
-  'query_end_launch' : ActorMethod<[number, number], Page>,
+  'query_block_index_data' : ActorMethod<
+    [number, number],
+    Array<[number, BlockAggregateData]>
+  >,
   'query_launch' : ActorMethod<[PageQuery], Page>,
   'query_tx_event' : ActorMethod<[string], [] | [Event]>,
   'reset_blocks' : ActorMethod<[], Result_1>,

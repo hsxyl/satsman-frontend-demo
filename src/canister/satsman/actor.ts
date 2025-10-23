@@ -25,11 +25,11 @@ export function satsmanActorWithIdentity(
   })
 }
 
-export type PoolStatusStr = "Init" | "Upcoming"  | "Ongoing" | "LaunchFailed" | "LaunchSuccess" | "AddingLp" | "AddedLp"
+export type PoolStatusStr = "Upcoming"  | "Ongoing" | "LaunchFailed" | "LaunchSuccess" | "AddingLp" | "AddedLp"
 
 export function pool_status_str(launch_status: PoolStatus): PoolStatusStr {
   let s = Object.entries(launch_status)[0]![0];
-  if(["Init" , "Upcoming" , "Ongoing" , "LaunchFailed" , "LaunchSuccess" , "AddingLp", "AddedLp"].includes(s)) {
+  if(["Upcoming" , "Ongoing" , "LaunchFailed" , "LaunchSuccess" , "AddingLp", "AddedLp"].includes(s)) {
     return s as PoolStatusStr;
   } else {
     throw new Error(`Invalid game status: ${s}`);
@@ -38,7 +38,7 @@ export function pool_status_str(launch_status: PoolStatus): PoolStatusStr {
 
 export function pool_status_number(launch_status: PoolStatus): number {
   let s = Object.entries(launch_status)[0]![0];
-  let status_vec = ["Init" , "Upcoming" , "Ongoing" , "LaunchFailed" , "LaunchSuccess" , "AddingLp" , "AddedLp"];
+  let status_vec = ["Upcoming" , "Ongoing" , "LaunchFailed" , "LaunchSuccess" , "AddingLp" , "AddedLp"];
   let idx = status_vec.indexOf(s);
   if(idx >= 0) {
     return idx;

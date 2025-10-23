@@ -32,6 +32,13 @@ export function Topbar() {
           {/* <img src='/logo.png' alt='Logo' className='mx-6 h-20' /> */}
         </Link>
 
+		<Link to={`/profile/${address}`}>
+          <p className="border border-orange-500 px-3 py-1 rounded-md text-orange-500 hover:bg-orange-500 hover:text-white transition-colors">
+            Profile
+          </p>
+          {/* <img src='/logo.png' alt='Logo' className='mx-6 h-20' /> */}
+        </Link>
+
         <div className="mr-2">
           {address ? <AccountButton /> : <ConnectButton />}
         </div>

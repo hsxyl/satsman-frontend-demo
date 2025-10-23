@@ -8,21 +8,26 @@ import {
   FormProps,
   Input,
   Select,
+  Skeleton,
   Space,
+  Switch,
 } from "antd";
 import { convertMaestroUtxo } from "api/maestro";
 import { indexerActor } from "canister/runes-indexer/actor";
 import { satsmanActor } from "canister/satsman/actor";
 import { useLatestBlockHeight } from "hooks/use-mempool";
-import { useLaunchPools } from "hooks/use-pool";
+import { useConfig, useLaunchPools } from "hooks/use-pool";
 import { useLoginUserBtcUtxo } from "hooks/use-utxos";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { convertUtxo, createTx } from "utils";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import _ from "lodash";
+import { RuneEntry } from "canister/runes-indexer/service.did";
 
 type FieldType = {
   rune_name?: string;
   token_for_auction?: string;
+  lp_percentage?: string;
   token_for_lp?: string;
   raising_target_sats?: number;
   income_distribution?: IncomeDistributionItem[];
@@ -36,14 +41,144 @@ type IncomeDistributionItem = {
   address: string;
 };
 
+function rune_etch_end(runeEntry: RuneEntry): number | null {
+  if (runeEntry.terms.length === 0) {
+    return null;
+  }
+
+  const terms = runeEntry.terms[0];
+
+  const relative =
+    terms.offset[1].length > 0 ? runeEntry.block + terms.offset[1][0]! : null;
+
+  const absolute = terms.height?.[1] ?? null;
+
+  if (relative !== null && absolute !== null) {
+    return Math.min(Number(relative), Number(absolute));
+  }
+
+  if (relative !== null) {
+    return Number(relative);
+  }
+
+  if (absolute !== null) {
+    return Number(absolute);
+  }
+
+  return null;
+}
+
+function finished_mintable_rune_amount(
+  runeEntry: RuneEntry,
+  latestBlockHeight: number,
+  finalize_threshold: number
+): boolean {
+  if (runeEntry.terms.length === 0) {
+    return true;
+  }
+  let end = rune_etch_end(runeEntry);
+  if (end !== null) {
+    if (latestBlockHeight >= end + finalize_threshold) {
+      return true;
+    }
+  }
+
+  let cap = runeEntry.terms[0]!.cap[0] ?? 0;
+
+  if (runeEntry.mints >= cap) {
+    return true;
+  }
+
+  return false;
+}
+
+function runeSupply(runeEntry: RuneEntry): bigint {
+  //   if (runeEntry.terms.length === 0) {
+  //     return BigInt(0);
+  //   }
+  let amount = runeEntry.terms[0]?.amount[0] ?? BigInt(0);
+
+  return runeEntry.premine + runeEntry.mints * amount - runeEntry.burned;
+}
+
 export function CreateLaunch() {
-  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [lpPercentage, setLpPercentage] = useState<number | undefined>(undefined);
+  const [tokenForAuction, setTokenForAuction] = useState<string>("");
+  const [tokenForLp, setTokenForLp] = useState<string>("Wait For Calculation...");
+  const [runeInfo, setRuneInfo] = useState<RuneEntry | undefined>(undefined);
+  const [runeName, setRuneName] = useState<string>("");
+  const [isMeme, setIsMeme] = useState<boolean>(false);
   const [calling, setCalling] = useState<boolean>(false);
+  const {
+    data: config,
+    isLoading: isConfigLoading,
+    error: configError,
+  } = useConfig();
+
+  const runeNameChanged = async (value: string) => {
+    console.log("rune name changed:", value);
+    setRuneName(value);
+    let rune = await indexerActor.get_rune(value);
+    console.log("get rune info from indexer", { rune });
+    if (rune.length > 0) {
+      setRuneInfo(rune[0]);
+    }
+  };
 
   //   const { data: btcUtxos, isLoading: isLoadingUtxo } = useLoginUserBtcUtxo();
-  const { data: latestBlockHeight } = useLatestBlockHeight();
+  const {
+    data: latestBlockHeight,
+    isLoading: isLoadingLatestBlockHeight,
+    error: latestBlockHeightError,
+  } = useLatestBlockHeight();
+
+  const [isFinishedMint, supply] = useMemo(() => {
+    if (!runeInfo || !latestBlockHeight || !config) {
+      return [undefined, undefined];
+    }
+    let finished = finished_mintable_rune_amount(
+      runeInfo,
+      latestBlockHeight,
+      Number(config!.finalize_threshold)
+    );
+    let sup = runeSupply(runeInfo);
+    if (isMeme) {
+      setTokenForAuction(((sup * BigInt(51)) / BigInt(100)).toString());
+      setTokenForLp(((sup * BigInt(49)) / BigInt(100)).toString());
+      console.log({
+        tokenForAuction: ((sup * BigInt(51)) / BigInt(100)).toString(),
+        tokenForLp: ((sup * BigInt(49)) / BigInt(100)).toString(),
+      });
+    } else {
+        setTokenForAuction("");
+        setTokenForLp("Wait For Calculation...");
+    }
+    return [finished, sup];
+  }, [latestBlockHeight, runeInfo, config, isMeme]);
+
+  useEffect(() => {
+    console.log({ lpPercentage, tokenForAuction });
+    if (!lpPercentage || !tokenForAuction || isMeme) {
+      return;
+    }
+    setTokenForLp(((BigInt(tokenForAuction) * BigInt(lpPercentage)) / BigInt(100)).toString());
+  }, [lpPercentage, tokenForAuction, isMeme]);
+
   const { signPsbt } = useLaserEyes();
   const { createTransaction, address, paymentAddress } = useRee();
+
+  const loading = isConfigLoading || isLoadingLatestBlockHeight;
+  const error = configError || latestBlockHeightError;
+
+  console.log({ config, latestBlockHeight });
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
 
   const onFinish: FormProps<FieldType>["onFinish"] = async (values) => {
     console.log("onFinish:", values);
@@ -55,24 +190,25 @@ export function CreateLaunch() {
       }
       let create_launch_state = await satsmanActor.get_create_launch_info();
 
-      let rune = await indexerActor.get_rune(values.rune_name!);
+      let rune = await indexerActor.get_rune(runeName!);
       let rune_id = rune[0]!.rune_id;
       const tx = await createTransaction();
-    //   let poolUtxo = convertUtxo(
-    //     create_launch_state.utxo,
-    //     create_launch_state.key
-    //   );
+      //   let poolUtxo = convertUtxo(
+      //     create_launch_state.utxo,
+      //     create_launch_state.key
+      //   );
       let action_params = {
-        rune_name: values.rune_name,
+        rune_name: runeName,
         rune_id: rune_id,
-        token_for_auction: values.token_for_auction!,
-        token_for_lp: values.token_for_lp!,
-        raising_target_sats: values.raising_target_sats! * 1000,
-        income_distribution: values.income_distribution!.map((item) => ({
+        token_for_auction: tokenForAuction,
+        token_for_lp: tokenForLp,
+        income_for_lp_percentage: lpPercentage,
+        income_distribution: (values.income_distribution ?? []).map((item) => ({
           label: item.label,
           percentage: Number(item.percentage!),
           address: item.address,
         })),
+
         description: null,
         social_info: {
           twitter: null,
@@ -82,15 +218,18 @@ export function CreateLaunch() {
           website: null,
         },
         start_height: Number(values.auction_start_height!),
-        span_blocks: Number(values.span_blocks!) * 144,
+        span_blocks: Number(values.span_blocks!),
+        raising_target_sats: values.raising_target_sats! * 1000,
+        banner: null,
+        is_meme_template: isMeme,
       };
 
       console.log({ action_params: JSON.stringify(action_params) });
-    //   return
+      //   return
 
-      let new_pool_address = await satsmanActor.new_pool(paymentAddress)
-      let total_rune_amount = BigInt(
-        values.token_for_auction!) + BigInt(values.token_for_lp!);
+      let new_pool_address = await satsmanActor.new_pool(paymentAddress);
+      let total_rune_amount =
+        BigInt(tokenForAuction!) + BigInt(tokenForLp!);
       console.log({ new_pool_address, rune_id, total_rune_amount });
       tx.addIntention({
         poolAddress: new_pool_address,
@@ -108,7 +247,9 @@ export function CreateLaunch() {
             from: paymentAddress,
             coin: {
               id: rune_id,
-              value: BigInt(values.token_for_auction!) + BigInt(values.token_for_lp!),
+              value:
+                BigInt(tokenForAuction!) +
+                BigInt(tokenForLp!),
             },
           },
         ],
@@ -138,83 +279,151 @@ export function CreateLaunch() {
       <Form onFinish={onFinish} layout="horizontal" style={{ maxWidth: 600 }}>
         <h1 className="text-2xl my-4">Token Information</h1>
         <Form.Item name="rune_name" label="Rune Name: ">
-          <Input placeholder="MY•TOKEN•NAME" />
+          <Input
+            value={runeName}
+            onChange={(e) => runeNameChanged(e.target.value)}
+            placeholder="MY•TOKEN•NAME"
+          />
+          {isFinishedMint === undefined ? (
+            <Skeleton active paragraph={false} />
+          ) : (
+            <span>{"Rune Supply" + supply}</span>
+          )}
         </Form.Item>
+        {isFinishedMint !== undefined && isFinishedMint === false && (
+          <span className="text-red-500">Mint not finished</span>
+        )}
+
         <div className="border-t border-b border-gray-300 my-4 border-dashed" />
+
         <h1 className="text-2xl my-4">Launch Plan</h1>
+
+        <div className="my-2">
+          <span className="mr-2">meme template</span>
+          <Switch checked={isMeme} onChange={setIsMeme} />
+        </div>
+
         <Form.Item name="token_for_auction" label="Token for Auction: ">
-          <Input placeholder="4,000,000" />
+          {isMeme ? (
+            <span>{tokenForAuction}</span>
+          ) : (
+            // <input
+            // // readOnly={isMeme}
+            // value={tokenForAuction}
+            // placeholder="Waiting for Calculation..."
+            // />
+            <Input
+            value={tokenForAuction}
+            onChange={(e) => setTokenForAuction(e.target.value)}
+              placeholder={`At least ${
+                supply && (supply * BigInt(5)) / BigInt(100)
+              }`}
+            />
+          )}
         </Form.Item>
-        <Form.Item name="token_for_lp" label="Token for Lp: ">
-          <Input placeholder="2,000,000" />
-        </Form.Item>
+
         <Form.Item name="raising_target_sats" label="Raising Target(K sats): ">
-          <Input placeholder="10-1000" />
+          <Input
+            placeholder={`${Number(config!.minimum_raising_target) / 1000} - ${
+              Number(config!.maximum_raising_target) / 1000
+            }`}
+          />
         </Form.Item>
         <Form.Item name="auction_start_height" label="Auction Start Height">
-          <Input placeholder="915501-919389" />
+          <Input
+            placeholder={`${
+              latestBlockHeight! + config!.minimum_start_height_offset
+            } - ${latestBlockHeight! + config!.maximum_start_height_offset}`}
+          />
         </Form.Item>
         <Form.Item name="span_blocks" label="Span Blocks">
           <Select>
-            <Select.Option value="3">144 * 3</Select.Option>
-            <Select.Option value="4">144 * 4</Select.Option>
-            <Select.Option value="5">144 * 5</Select.Option>
-            <Select.Option value="6">144 * 6</Select.Option>
-            <Select.Option value="7">144 * 7</Select.Option>
+            {Array.from(config!.launch_span_options).map((value) => {
+              return (
+                <Select.Option value={value.toString()}>{value} </Select.Option>
+              );
+            })}
           </Select>
         </Form.Item>
-        <p className="mr-4">50% token auction income will be receive by:</p>
-        <Form.List name="income_distribution">
-          {(fields, { add, remove }) => (
-            <>
-              {fields.map(({ key, name, ...restField }) => (
-                <Space
-                  key={key}
-                  style={{ display: "flex", marginBottom: 8 }}
-                  align="baseline"
-                >
-                  <Form.Item
-                    {...restField}
-                    name={[name, "label"]}
-                    rules={[{ required: true, message: "Missing label" }]}
-                  >
-                    <Input placeholder="Label" />
+        {!isMeme && (
+          <>
+            <Form.Item name="lp_percentage" label="Auction Income for LP (%): ">
+              <Input
+                value={lpPercentage}
+                onChange={(e) => setLpPercentage(Number(e.target.value))}
+                placeholder={`${
+                  config!.minimum_auction_income_for_lp_percentage
+                }-${
+                  100 -
+                  Number(config!.exchange_fee_percentage) -
+                  Number(config!.referral_bonus_percentage)
+                }`}
+              />
+            </Form.Item>
+          </>
+        )}
+
+        <Form.Item name="token_for_lp" label="Token for Lp: ">
+            <span>{tokenForLp}</span>
+        </Form.Item>
+        {!isMeme && (
+          <>
+            <p className="mr-4">{100 - (lpPercentage??0) - (config?.exchange_fee_percentage??0) - (config?.referral_bonus_percentage??0)}% token auction income will be receive by:</p>
+            <Form.List name="income_distribution">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Space
+                      key={key}
+                      style={{ display: "flex", marginBottom: 8 }}
+                      align="baseline"
+                    >
+                      <Form.Item
+                        {...restField}
+                        name={[name, "label"]}
+                        rules={[{ required: true, message: "Missing label" }]}
+                      >
+                        <Input placeholder="Label" />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, "percentage"]}
+                        rules={[
+                          { required: true, message: "Missing percentage" },
+                        ]}
+                      >
+                        <Input placeholder="Percentage" />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, "address"]}
+                        rules={[{ required: true, message: "Missing address" }]}
+                      >
+                        <Input placeholder="Address" />
+                      </Form.Item>
+                      <MinusCircleOutlined onClick={() => remove(name)} />
+                    </Space>
+                  ))}
+                  <Form.Item>
+                    <Button
+                      type="dashed"
+                      onClick={() => add()}
+                      block
+                      icon={<PlusOutlined />}
+                    >
+                      Add Item
+                    </Button>
                   </Form.Item>
-                  <Form.Item
-                    {...restField}
-                    name={[name, "percentage"]}
-                    rules={[{ required: true, message: "Missing percentage" }]}
-                  >
-                    <Input placeholder="Percentage" />
-                  </Form.Item>
-                  <Form.Item
-                    {...restField}
-                    name={[name, "address"]}
-                    rules={[{ required: true, message: "Missing address" }]}
-                  >
-                    <Input placeholder="Address" />
-                  </Form.Item>
-                  <MinusCircleOutlined onClick={() => remove(name)} />
-                </Space>
-              ))}
-              <Form.Item>
-                <Button
-                  type="dashed"
-                  onClick={() => add()}
-                  block
-                  icon={<PlusOutlined />}
-                >
-                  Add Item
-                </Button>
-              </Form.Item>
-              <Form.Item>
-                <Button loading={calling} type="primary" htmlType="submit">
-                  Kick off Launch
-                </Button>
-              </Form.Item>
-            </>
-          )}
-        </Form.List>
+                </>
+              )}
+            </Form.List>
+          </>
+        )}
+        <Form.Item>
+          <Button loading={calling} type="primary" htmlType="submit">
+            Kick off Launch
+          </Button>
+        </Form.Item>
       </Form>
 
       {/* <Button

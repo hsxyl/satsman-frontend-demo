@@ -4,7 +4,11 @@ import { convertUtxo, createTx, shortenAddress } from "../utils";
 import { useLoginUserBtcUtxo } from "../hooks/use-utxos";
 import { convertMaestroUtxo } from "../api/maestro";
 import { List } from "antd";
-import { useLaunchPools, useQueryLaunchPools } from "hooks/use-pool";
+import {
+  useHomePageBlockAggregationData,
+  useLaunchPools,
+  useQueryLaunchPools,
+} from "hooks/use-pool";
 import { Link } from "react-router-dom";
 import { StarFilled, StarOutlined } from "@ant-design/icons";
 import { useLatestBlockHeight } from "hooks/use-mempool";
@@ -20,10 +24,11 @@ export function Home() {
   } = useQueryLaunchPools({
     page: 1,
     page_size: 20,
-    sort_by: [{TVL: null}],
+    sort_by: [{ TVL: null }],
     sort_order: [],
     status_filters: [{ Upcoming: null }],
     search_text: [],
+    featured_first: true,
   });
 
   const {
@@ -32,25 +37,32 @@ export function Home() {
   } = useQueryLaunchPools({
     page: 1,
     page_size: 20,
-    sort_by: [{TVL: null}],
+    sort_by: [{ TVL: null }],
     sort_order: [],
     status_filters: [{ Ongoing: null }],
     search_text: [],
+    featured_first: true,
   });
 
-    const {
+  const {
     data: paginatedCompletedLaunchPools,
     isLoading: isCompletedLaunchPaginated,
   } = useQueryLaunchPools({
     page: 1,
     page_size: 20,
-    sort_by: [{EndHeight: null}],
+    sort_by: [{ EndHeight: null }],
     sort_order: [],
     status_filters: [{ Completed: null }],
     search_text: [],
+    featured_first: false,
   });
 
   const { data: latestBlockHeight } = useLatestBlockHeight();
+
+  const { data: blockAggregationData } = useHomePageBlockAggregationData(
+    latestBlockHeight ? latestBlockHeight - 6 : undefined,
+    latestBlockHeight
+  );
 
   console.log({ launchPools, paginatedOngoingLaunchPools });
 
@@ -64,6 +76,26 @@ export function Home() {
           Create New Launch
         </button>
       </Link>
+
+      <div className="flex flex-row">
+        {blockAggregationData?.[0].map((dataPoint) => {
+          const height = dataPoint[0];
+          const data = dataPoint[1];
+
+          return (
+            <div className="border border-black m-2" key={height}>
+              <p>{height}</p>
+              <p>{data.ongoing_launches_count} launches</p>
+              <p>{data.total_release_rune_amount} R</p>
+              {/* Block Height: {height}, Data: {JSON.stringify(data)} */}
+            </div>
+          );
+        })}
+        <div className="border border-black m-2">
+          <p>Satsman</p>
+          <p>{blockAggregationData?.[1].total_btc_raised} B from {blockAggregationData?.[1].total_btc_raised} Satsmen</p>
+        </div>
+      </div>
 
       <div>
         <h1>On-going Launches</h1>
@@ -155,7 +187,7 @@ export function Home() {
         />
       </div>
 
-       <div>
+      <div>
         <h1>Completed Launches</h1>
         <List
           loading={isCompletedLaunchPaginated}
@@ -176,11 +208,17 @@ export function Home() {
                 </p>
                 <p>{item.user_tunes.length} Satsman</p>
                 <p>
-                  Received {Number(item.highest_block_states[0]?.total_raised_btc_balances!??0) / 1000} K Sats
-                  from {item.user_tunes.length} Satsman
+                  Received{" "}
+                  {Number(
+                    item.highest_block_states[0]?.total_raised_btc_balances! ??
+                      0
+                  ) / 1000}{" "}
+                  K Sats from {item.user_tunes.length} Satsman
                 </p>
                 <p>
-                  {pool_status_str(item.status)==='LaunchSuccess' ? 'Success' : 'Failed'}
+                  {pool_status_str(item.status) === "LaunchSuccess"
+                    ? "Success"
+                    : "Failed"}
                 </p>
                 <Link to={`/launch/${item.pool_address}`}>
                   <p className="text-center text-black text-md border-2 mt-1">
@@ -192,8 +230,6 @@ export function Home() {
           )}
         />
       </div>
-
-    
     </div>
   );
 }

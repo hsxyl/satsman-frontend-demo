@@ -69,6 +69,35 @@ export function useUserRecords(address: string | undefined) {
 
 }
 
+
+export function useHomePageBlockAggregationData(start_height: number | undefined, end_height: number | undefined) {
+  return useQuery({
+    queryKey: ["home_page_block_aggregation_data", start_height, end_height],
+    queryFn: async () => {
+      if (!start_height || !end_height) {
+        return undefined;
+      }
+      return await satsmanActor.get_home_page_block_aggregation_data(start_height!, end_height!);
+    },
+    enabled: !!start_height && !!end_height,
+    refetchInterval: 60 * 1000, // Refetch every 60 seconds
+  });
+}
+
+export function useGetPoolWithStateAndKey(pool_address: string | undefined) {
+  return useQuery({
+    queryKey: ["get-pool-with-state-and-key", pool_address],
+    queryFn: async () => {
+      if (!pool_address) {
+        return undefined;
+      }
+      return await satsmanActor.get_pool_with_state_and_key(pool_address);
+    },
+    enabled: !!pool_address,
+    refetchInterval: 20 * 1000, // Refetch every 20 seconds
+  });
+}
+
 export function useQueryLaunchPools(
   pageQuery: PageQuery
 ) {
@@ -78,6 +107,16 @@ export function useQueryLaunchPools(
       return await satsmanActor.query_launch(pageQuery);
     },
     refetchInterval: 60 * 1000, // Refetch every 60 seconds
+  });
+}
+
+export function useConfig() {
+  return useQuery({
+    queryKey: ["satsman-config"],
+    queryFn: async () => {
+      return await satsmanActor.get_config();
+    },
+    refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
   });
 }
 

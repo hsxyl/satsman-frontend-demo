@@ -37,6 +37,7 @@ export const idlFactory = ({ IDL }) => {
     'withdraw_txid' : IDL.Opt(IDL.Text),
     'receive_rune_in_current_block' : IDL.Nat,
     'last_update_block' : IDL.Nat32,
+    'tune' : IDL.Nat8,
     'total_contributed_btc' : IDL.Nat64,
     'pay_in_current_block' : IDL.Nat64,
     'btc_balance' : IDL.Nat64,
@@ -56,6 +57,20 @@ export const idlFactory = ({ IDL }) => {
     'block_height' : IDL.Nat32,
     'total_raised_btc_balances' : IDL.Nat64,
   });
+  const Config = IDL.Record({
+    'maximum_raising_target' : IDL.Nat64,
+    'minimum_top_up_sats' : IDL.Nat64,
+    'maximum_start_height_offset' : IDL.Nat32,
+    'exchange_fee_percentage' : IDL.Nat8,
+    'finalize_threshold' : IDL.Nat32,
+    'launch_span_options' : IDL.Vec(IDL.Nat32),
+    'referral_bonus_percentage' : IDL.Nat8,
+    'minimum_auction_income_for_lp_percentage' : IDL.Nat8,
+    'minimum_raising_target' : IDL.Nat64,
+    'maximum_top_up_sats' : IDL.Nat64,
+    'create_fee_sats' : IDL.Nat64,
+    'minimum_start_height_offset' : IDL.Nat32,
+  });
   const CreateLaunchState = IDL.Record({
     'create_pool_fee' : IDL.Nat64,
     'min_start_block_height' : IDL.Nat32,
@@ -66,9 +81,17 @@ export const idlFactory = ({ IDL }) => {
     'user_referral_codes' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'is_task_running' : IDL.Bool,
     'code_of_users' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+    'sync_block_height' : IDL.Nat32,
+  });
+  const HomePageBlockData = IDL.Record({
+    'ongoing_launches_count' : IDL.Nat32,
+    'total_release_rune_amount' : IDL.Nat,
+  });
+  const HomePageSatsmanData = IDL.Record({
+    'total_btc_raised' : IDL.Nat64,
+    'total_satsman_count' : IDL.Nat32,
   });
   const PoolStatus = IDL.Variant({
-    'Init' : IDL.Null,
     'AddedLp' : IDL.Null,
     'Ongoing' : IDL.Null,
     'LaunchSuccess' : IDL.Null,
@@ -90,6 +113,8 @@ export const idlFactory = ({ IDL }) => {
   });
   const LaunchPlan = IDL.Record({
     'start_height' : IDL.Nat32,
+    'income_for_lp_percentage' : IDL.Nat8,
+    'is_meme_template' : IDL.Bool,
     'social_info' : SocialInfo,
     'token_for_lp' : IDL.Text,
     'rune_name' : IDL.Text,
@@ -101,12 +126,6 @@ export const idlFactory = ({ IDL }) => {
     'rune_id' : IDL.Text,
     'income_distribution' : IDL.Vec(IncomeDistributionItem),
   });
-  const LaunchRaisedBtcShare = IDL.Record({
-    'creator_distribution_percentage' : IDL.Nat8,
-    'exchange_fee_percentage' : IDL.Nat8,
-    'referral_bonus_percentage' : IDL.Nat8,
-    'lp_percentage' : IDL.Nat8,
-  });
   const PoolBusinessStateView = IDL.Record({
     'status' : PoolStatus,
     'creator' : IDL.Text,
@@ -117,13 +136,14 @@ export const idlFactory = ({ IDL }) => {
     'btc_amount_for_lp' : IDL.Nat,
     'raising_target' : IDL.Nat64,
     'key_derivation_path' : IDL.Vec(IDL.Vec(IDL.Nat8)),
+    'exchange_fee_percentage' : IDL.Nat8,
+    'referral_bonus_percentage' : IDL.Nat8,
     'highest_block_states' : IDL.Opt(BlockState),
     'user_tunes' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat8)),
     'rune_amount_for_lp' : IDL.Nat,
     'rune_amount_for_launch' : IDL.Nat,
     'pool_address' : IDL.Text,
     'launch_plan' : LaunchPlan,
-    'launch_raised_btc_share' : LaunchRaisedBtcShare,
     'add_lp_txid' : IDL.Opt(IDL.Text),
     'rune_id' : IDL.Text,
   });
@@ -191,14 +211,11 @@ export const idlFactory = ({ IDL }) => {
     'block_timestamp' : IDL.Nat64,
     'block_height' : IDL.Nat32,
   });
-  const Page = IDL.Record({
-    'page_size' : IDL.Nat32,
-    'total' : IDL.Nat32,
-    'page' : IDL.Nat32,
-    'total_pages' : IDL.Nat32,
-    'items' : IDL.Vec(PoolBusinessStateView),
-    'has_next' : IDL.Bool,
-    'has_prev' : IDL.Bool,
+  const BlockAggregateData = IDL.Record({
+    'total_paying_sats' : IDL.Nat64,
+    'total_minted_rune' : IDL.Nat,
+    'total_ongoing_launch_pools' : IDL.Nat32,
+    'total_paying_users' : IDL.Nat32,
   });
   const SortBy = IDL.Variant({
     'TVL' : IDL.Null,
@@ -214,11 +231,21 @@ export const idlFactory = ({ IDL }) => {
   const SortOrder = IDL.Variant({ 'Asc' : IDL.Null, 'Desc' : IDL.Null });
   const PageQuery = IDL.Record({
     'sort_by' : IDL.Opt(SortBy),
+    'featured_first' : IDL.Bool,
     'page_size' : IDL.Nat32,
     'status_filters' : IDL.Opt(Filter),
     'page' : IDL.Nat32,
     'sort_order' : IDL.Opt(SortOrder),
     'search_text' : IDL.Opt(IDL.Text),
+  });
+  const Page = IDL.Record({
+    'page_size' : IDL.Nat32,
+    'total' : IDL.Nat32,
+    'page' : IDL.Nat32,
+    'total_pages' : IDL.Nat32,
+    'items' : IDL.Vec(PoolBusinessStateView),
+    'has_next' : IDL.Bool,
+    'has_prev' : IDL.Bool,
   });
   const RollbackTxArgs = IDL.Record({
     'txid' : IDL.Text,
@@ -240,8 +267,14 @@ export const idlFactory = ({ IDL }) => {
     'feature_pool' : IDL.Func([IDL.Text], [Result_1], []),
     'generate_referral_code' : IDL.Func([IDL.Text], [IDL.Text], []),
     'get_block_state' : IDL.Func([IDL.Text], [IDL.Vec(BlockState)], ['query']),
+    'get_config' : IDL.Func([], [Config], ['query']),
     'get_create_launch_info' : IDL.Func([], [CreateLaunchState], ['query']),
     'get_exchange_state' : IDL.Func([], [ExchangeState], ['query']),
+    'get_home_page_block_aggregation_data' : IDL.Func(
+        [IDL.Nat32, IDL.Nat32],
+        [IDL.Vec(IDL.Tuple(IDL.Nat32, HomePageBlockData)), HomePageSatsmanData],
+        [],
+      ),
     'get_launch_pool' : IDL.Func(
         [IDL.Text],
         [IDL.Opt(PoolBusinessStateView)],
@@ -276,7 +309,11 @@ export const idlFactory = ({ IDL }) => {
     'get_user_records' : IDL.Func([IDL.Text], [UserLaunchRecordPools], []),
     'new_block' : IDL.Func([NewBlockInfo], [Result_1], []),
     'new_pool' : IDL.Func([IDL.Text], [IDL.Text], []),
-    'query_end_launch' : IDL.Func([IDL.Nat32, IDL.Nat32], [Page], ['query']),
+    'query_block_index_data' : IDL.Func(
+        [IDL.Nat32, IDL.Nat32],
+        [IDL.Vec(IDL.Tuple(IDL.Nat32, BlockAggregateData))],
+        ['query'],
+      ),
     'query_launch' : IDL.Func([PageQuery], [Page], []),
     'query_tx_event' : IDL.Func([IDL.Text], [IDL.Opt(Event)], ['query']),
     'reset_blocks' : IDL.Func([], [Result_1], []),
