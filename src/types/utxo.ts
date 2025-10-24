@@ -1,3 +1,5 @@
+import { Utxo } from "@omnity/ree-client-ts-sdk";
+
 export interface UnspentOutput {
   txid: string;
   vout: number;
@@ -11,6 +13,17 @@ export interface UnspentOutput {
     amount: string;
   }[];
   rawtx?: string;
+}
+
+export function convertUnspentOutputToUtxo(utxo: UnspentOutput): Utxo {
+  return {
+    txid: utxo.txid,
+    vout: utxo.vout,
+    satoshis: utxo.satoshis.toString(),
+    runes: utxo.runes,
+    address: utxo.address,
+    scriptPk: utxo.scriptPk,
+  }
 }
 
 export enum AddressType {

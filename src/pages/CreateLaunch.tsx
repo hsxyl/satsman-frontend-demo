@@ -1,5 +1,4 @@
 import { useLaserEyes } from "@omnisat/lasereyes";
-import { useRee } from "@omnity/ree-client-ts-sdk";
 import {
   Button,
   Divider,
@@ -23,6 +22,7 @@ import { convertUtxo, createTx } from "utils";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import _ from "lodash";
 import { RuneEntry } from "canister/runes-indexer/service.did";
+import { useRee } from "@omnity/ree-client-ts-sdk";
 
 type FieldType = {
   rune_name?: string;
@@ -202,7 +202,7 @@ export function CreateLaunch() {
         rune_id: rune_id,
         token_for_auction: tokenForAuction,
         token_for_lp: tokenForLp,
-        income_for_lp_percentage: lpPercentage,
+        income_for_lp_percentage: isMeme? 100 - config!.exchange_fee_percentage - config!.referral_bonus_percentage :lpPercentage,
         income_distribution: (values.income_distribution ?? []).map((item) => ({
           label: item.label,
           percentage: Number(item.percentage!),
@@ -426,79 +426,6 @@ export function CreateLaunch() {
         </Form.Item>
       </Form>
 
-      {/* <Button
-        onClick={async () => {
-          setCalling(true);
-          try {
-            if (!address || !paymentAddress) {
-              alert("Please connect your wallet first.");
-              return;
-            }
-            let create_launch_state =
-              await satsmanActor.get_create_launch_info();
-
-            const tx = await createTransaction();
-            let poolUtxo = convertUtxo(
-              create_launch_state.utxo,
-              create_launch_state.key
-            );
-            tx.addIntention({
-              poolAddress: create_launch_state.register_pool_address,
-              poolUtxos: [
-                {
-                  txid: poolUtxo.txid,
-                  vout: poolUtxo.vout,
-                  satoshis: poolUtxo.satoshis.toString(),
-                  runes: poolUtxo.runes,
-                  address: poolUtxo.address,
-                  scriptPk: poolUtxo.scriptPk,
-                },
-              ],
-              action: "create_launch",
-              inputCoins: [
-                {
-                  from: paymentAddress,
-                  coin: {
-                    id: "0:0",
-                    value: create_launch_state.create_pool_fee,
-                  },
-                },
-              ],
-              outputCoins: [],
-              actionParams: JSON.stringify({
-                launch_args: {
-                  start_height: Number(startHeight),
-                  raising_target_sats: Number(raisingTarget) * 1000,
-                  social_info: {},
-                },
-                launch_rune_etching_args: {
-                  rune_name: runeName,
-                },
-              }),
-              nonce: create_launch_state.nonce,
-            });
-
-            const { psbt } = await tx.build();
-            const res = await signPsbt(psbt.toBase64());
-            const signedPsbtHex = res!.signedPsbtHex!;
-            const txid = await tx.send(signedPsbtHex);
-
-            console.log("invoke success and txid ", txid);
-            alert("Create Launch Success: " + txid);
-            window.location.assign(`/`);
-          } catch (e) {
-            console.error(e);
-            alert("Create Launch failed: " + (e as Error).message);
-          } finally {
-            setCalling(false);
-          }
-        }}
-        type="primary"
-        // disabled={!runeName || !startHeight || !raisingTarget}
-        loading={calling}
-      >
-        Kick-off Launch
-      </Button> */}
     </div>
   );
 }

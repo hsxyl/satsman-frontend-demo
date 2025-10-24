@@ -219,7 +219,6 @@ export interface PoolInfo {
 export type PoolStatus = { 'AddedLp' : null } |
   { 'Ongoing' : null } |
   { 'LaunchSuccess' : null } |
-  { 'AddingLp' : null } |
   { 'Upcoming' : null } |
   { 'LaunchFailed' : null };
 export type Result = { 'Ok' : string } |
@@ -245,6 +244,7 @@ export type SortOrder = { 'Asc' : null } |
 export interface UserInfoOfLaunch {
   'tune' : number,
   'account' : [] | [Account],
+  'balance_include_unconfirmed' : bigint,
   'launch_pool_address' : string,
   'referred_by_code' : [] | [string],
   'my_referral_code' : [] | [string],

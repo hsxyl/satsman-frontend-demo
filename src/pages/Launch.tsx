@@ -40,10 +40,11 @@ import { convertUtxo, shortenAddress } from "utils";
 import { addLiquidityTx } from "utils/tx-helper/addLp";
 import { topupTx } from "utils/tx-helper/topup";
 import { withdrawTx } from "utils/tx-helper/withdraw";
-import { Line } from '@ant-design/charts';
+import { Line } from "@ant-design/charts";
 import { StarFilled } from "@ant-design/icons";
 import { useRee } from "@omnity/ree-client-ts-sdk";
-
+import { convertUnspentOutputToUtxo } from "types";
+import { BITCOIN } from "../constants";
 
 export function Launch() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -66,7 +67,7 @@ export function Launch() {
   } = usePoolBlockStates(pool_address);
 
   const loading = useMemo(() => {
-    return isLoading && isLoadingBlockStats;
+    return isLoading || isLoadingBlockStats;
   }, [isLoading, isLoadingBlockStats]);
 
   const anyError = useMemo(() => {
@@ -98,7 +99,7 @@ export function Launch() {
 
       {status_number >= 1 && (
         <div className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
-          <PriceLineChart block_states={blockStats??[]} />
+          <PriceLineChart block_states={blockStats ?? []} />
         </div>
       )}
 
@@ -126,53 +127,46 @@ export function Launch() {
   );
 }
 
-function PriceLineChart({
-  block_states,
-}: {
-  block_states: BlockState[]
-}) {
-
-  const data =  block_states.map((e) => {
+function PriceLineChart({ block_states }: { block_states: BlockState[] }) {
+  const data = block_states.map((e) => {
     return {
       block: Number(e.block_height),
-      price: Number(e.price_in_current_block)
-    }
-  })
+      price: Number(e.price_in_current_block),
+    };
+  });
 
   const config = {
     title: {
       visible: true,
-      text: '配置折线数据点样式',
+      text: "配置折线数据点样式",
     },
     description: {
       visible: true,
-      text: '自定义配置趋势线上数据点的样式',
+      text: "自定义配置趋势线上数据点的样式",
     },
-    padding: 'auto',
+    padding: "auto",
     forceFit: true,
     data,
-    xField: 'block',
-    yField: 'price',
+    xField: "block",
+    yField: "price",
     label: {
       visible: true,
-      type: 'point',
+      type: "point",
     },
     point: {
       visible: true,
       size: 5,
-      shape: 'diamond',
+      shape: "diamond",
       style: {
-        fill: 'white',
-        stroke: '#2593fc',
+        fill: "white",
+        stroke: "#2593fc",
         lineWidth: 2,
       },
     },
   };
 
   return <Line {...config} />;
-
 }
-
 
 function EndUserTable({
   pool_business_state,
@@ -361,8 +355,10 @@ function UserInfo({
   const { address, paymentAddress, signPsbt, publicKey, paymentPublicKey } =
     useLaserEyes();
 
-  const {data: poolState} = useGetPoolWithStateAndKey(pool_business_state.pool_address)
-  
+  const { data: poolState } = useGetPoolWithStateAndKey(
+    pool_business_state.pool_address
+  );
+
   const highest_block_state = pool_business_state.highest_block_states[0];
   const account = useMemo(() => {
     if (!address) {
@@ -376,9 +372,11 @@ function UserInfo({
   const account_balance_in_pool_state = useMemo(() => {
     if (!address || !poolState) {
       return 0n;
-    } 
+    }
 
-    return poolState?.[0]?.[0].user_balances.find((e) => e[0] === address)?.[1] || 0n;
+    return (
+      poolState?.[0]?.[0].user_balances.find((e) => e[0] === address)?.[1] || 0n
+    );
   }, [address, poolState]);
 
   const status_str = pool_status_str(pool_business_state.status);
@@ -412,7 +410,14 @@ function UserInfo({
           {address && account && (
             <div className="ml-16 flex flex-col">
               <p>My Satsman</p>
-              <p>Deposit: {account.btc_balance}{account_balance_in_pool_state && account_balance_in_pool_state>account.btc_balance && ` (${account_balance_in_pool_state - account.btc_balance} unconfirmed)`}</p>
+              <p>
+                Deposit: {account.btc_balance}
+                {account_balance_in_pool_state &&
+                  account_balance_in_pool_state > account.btc_balance &&
+                  ` (${
+                    account_balance_in_pool_state - account.btc_balance
+                  } unconfirmed)`}
+              </p>
               <p>Paid: {account.total_contributed_btc}</p>
               <p>Received: {account.minted_rune_amount}</p>
               <p>
@@ -504,6 +509,9 @@ function UserManager({
         User Balance:{" "}
         {(account?.btc_balance ?? BigInt(0)) -
           (account?.used_btc_balance ?? BigInt(0))}
+      </p>
+      <p>
+        User Deposited Total Balance(Include Unconfirmed): {userInfoOfLaunch?.balance_include_unconfirmed ?? 0}
       </p>
       <p>
         User Contributed Amount: {account?.total_contributed_btc ?? BigInt(0)}
@@ -609,6 +617,7 @@ function UserManager({
 
       <div className="flex items-center gap-4 my-4">
         <input
+        readOnly={!!referralCode}
           className="border text-black border-gray-300 rounded px-2 py-1"
           width={40}
           value={referralCode}
@@ -616,7 +625,7 @@ function UserManager({
           placeholder={"Referral Code"}
         />
         <Button
-          disabled={status_str !== "Ongoing" && status_str !== "Upcoming"}
+          disabled={ !!referralCode || (status_str !== "Ongoing" && status_str !== "Upcoming")}
           loading={calling}
           onClick={async () => {
             try {
@@ -641,7 +650,7 @@ function UserManager({
                     throw new Error(e.Err.toString());
                   }
                   if ("Ok" in e) {
-                    alert("Set Referral Code Success: " + JSON.stringify(e.Ok));
+                    alert("Set Referral Code Success!" );
                   }
                 });
               refetchUserInfo();
@@ -689,30 +698,34 @@ function UserManager({
               let pool_state = pool_state_res[0][0]!;
               let key = pool_state_res[0][1]!;
 
-              // const tx = await createTransaction();
-              // tx.addIntention
+              const tx = await createTransaction();
 
-
-
-              topupTx({
-                userBtcUtxos: btcUtxos!.map((e) =>
-                  convertMaestroUtxo(e, paymentPublicKey)
-                ),
-                poolBtcUtxo: convertUtxo(pool_state.utxo, key),
-                paymentAddress: paymentAddress!,
+              tx.addIntention({
                 poolAddress: pool_business_state.pool_address,
-                topupAmount: BigInt(topupAmount!),
+                poolUtxos: [
+                  convertUnspentOutputToUtxo(convertUtxo(pool_state.utxo, key)),
+                ],
+                action: "top_up",
+                inputCoins: [
+                  {
+                    from: paymentAddress,
+                    coin: {
+                      id: BITCOIN.id,
+                      value: BigInt(topupAmount!),
+                    },
+                  },
+                ],
+                outputCoins: [],
                 nonce: pool_state.nonce + BigInt(1),
-                signPsbt: signPsbt,
-              })
-                .then((e) => {
-                  console.log("invoke success and txid ", e);
-                  alert("Topup Success: " + e);
-                  window.location.reload();
-                })
-                .catch((e) => {
-                  alert("Topup Failed: " + (e as Error).message);
-                });
+              });
+
+              const { psbt } = await tx.build();
+              const res = await signPsbt(psbt.toBase64());
+              const signedPsbtHex = res!.signedPsbtHex!;
+              const txid = await tx.send(signedPsbtHex);
+
+              console.log("invoke success and txid ", txid);
+              alert("Create Launch Success: " + txid);
             } catch (e) {
               console.error(e);
               alert("Topup failed: " + (e as Error).message);
@@ -901,8 +914,6 @@ function LaunchSuccess({
             </Button>
           </div>
         );
-      case "AddingLp":
-        return <p className="text-yellow-500">Adding Liquidity...</p>;
       case "AddedLp":
         return <p className="text-green-500">Liquidity Added</p>;
       default:
@@ -950,16 +961,21 @@ function LaunchInfo({
   let last_block_state = pool_business_state?.highest_block_states?.[0];
   return (
     <div>
-      <p>{pool_business_state.launch_plan.rune_name} {pool_business_state.featured &&<StarFilled  style={{color: "gold"}}/>}</p>
+      <p>
+        {pool_business_state.launch_plan.rune_name}{" "}
+        {pool_business_state.featured && (
+          <StarFilled style={{ color: "gold" }} />
+        )}
+      </p>
       <p>Dev {pool_business_state.creator}</p>
       <p>
         Token for Auction: {pool_business_state.launch_plan.token_for_auction}
       </p>
       <p>Token for Dex LP: {pool_business_state.launch_plan.token_for_lp}</p>
       <p>
-        {
-          pool_business_state.launch_plan.income_distribution.map(e=>e.percentage).reduce((a, b) => a + b, 0)
-        }
+        {pool_business_state.launch_plan.income_distribution
+          .map((e) => e.percentage)
+          .reduce((a, b) => a + b, 0)}
         % will be received by{" "}
         {pool_business_state.launch_plan.income_distribution.length} addresses
       </p>

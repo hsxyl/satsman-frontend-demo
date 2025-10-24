@@ -95,7 +95,6 @@ export const idlFactory = ({ IDL }) => {
     'AddedLp' : IDL.Null,
     'Ongoing' : IDL.Null,
     'LaunchSuccess' : IDL.Null,
-    'AddingLp' : IDL.Null,
     'Upcoming' : IDL.Null,
     'LaunchFailed' : IDL.Null,
   });
@@ -196,6 +195,7 @@ export const idlFactory = ({ IDL }) => {
   const UserInfoOfLaunch = IDL.Record({
     'tune' : IDL.Nat8,
     'account' : IDL.Opt(Account),
+    'balance_include_unconfirmed' : IDL.Nat64,
     'launch_pool_address' : IDL.Text,
     'referred_by_code' : IDL.Opt(IDL.Text),
     'my_referral_code' : IDL.Opt(IDL.Text),

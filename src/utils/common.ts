@@ -87,6 +87,10 @@ export function isNumber(value: string) {
   return reg.test(value);
 }
 
+export function convertPoolUtxoToSdk() {
+
+}
+
 export function convertUtxo(utxo: Utxo, untweaked_key: string ): UnspentOutput {
   const { address: poolAddress, output } = getP2trAressAndScript(untweaked_key);
   return {
