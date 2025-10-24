@@ -1,5 +1,9 @@
 import { useLaserEyes } from "@omnisat/lasereyes";
-import { pool_status_str, satsmanActor } from "../canister/satsman/actor";
+import {
+  pool_outcome_str,
+  pool_status_str,
+  satsmanActor,
+} from "../canister/satsman/actor";
 import { convertUtxo, createTx, shortenAddress } from "../utils";
 import { useLoginUserBtcUtxo } from "../hooks/use-utxos";
 import { convertMaestroUtxo } from "../api/maestro";
@@ -93,7 +97,10 @@ export function Home() {
         })}
         <div className="border border-black m-2">
           <p>Satsman</p>
-          <p>{blockAggregationData?.[1].total_btc_raised} B from {blockAggregationData?.[1].total_btc_raised} Satsmen</p>
+          <p>
+            {blockAggregationData?.[1].total_btc_raised} Sats/B from{" "}
+            {blockAggregationData?.[1].total_btc_raised} Satsmen
+          </p>
         </div>
       </div>
 
@@ -215,11 +222,7 @@ export function Home() {
                   ) / 1000}{" "}
                   K Sats from {item.user_tunes.length} Satsman
                 </p>
-                <p>
-                  {pool_status_str(item.status) === "LaunchSuccess"
-                    ? "Success"
-                    : "Failed"}
-                </p>
+                <p>{pool_outcome_str(item.outcome)}</p>
                 <Link to={`/launch/${item.pool_address}`}>
                   <p className="text-center text-black text-md border-2 mt-1">
                     Details

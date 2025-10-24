@@ -164,6 +164,9 @@ export interface NewBlockInfo {
   'block_timestamp' : bigint,
   'block_height' : number,
 }
+export type Outcome = { 'Failed' : null } |
+  { 'Listed' : null } |
+  { 'Success' : null };
 export interface OutputCoin { 'to' : string, 'coin' : CoinBalance }
 export interface Page {
   'page_size' : number,
@@ -185,7 +188,7 @@ export interface PageQuery {
 }
 export interface PoolBasic { 'name' : string, 'address' : string }
 export interface PoolBusinessStateView {
-  'status' : PoolStatus,
+  'status' : Filter,
   'creator' : string,
   'featured' : boolean,
   'start_height' : number,
@@ -201,6 +204,7 @@ export interface PoolBusinessStateView {
   'rune_amount_for_lp' : bigint,
   'rune_amount_for_launch' : bigint,
   'pool_address' : string,
+  'outcome' : Outcome,
   'launch_plan' : LaunchPlan,
   'add_lp_txid' : [] | [string],
   'rune_id' : string,
@@ -216,11 +220,9 @@ export interface PoolInfo {
   'nonce' : bigint,
   'utxos' : Array<Utxo>,
 }
-export type PoolStatus = { 'AddedLp' : null } |
-  { 'Ongoing' : null } |
-  { 'LaunchSuccess' : null } |
-  { 'Upcoming' : null } |
-  { 'LaunchFailed' : null };
+export type PoolStatus = { 'Ongoing' : null } |
+  { 'Completed' : null } |
+  { 'Upcoming' : null };
 export type Result = { 'Ok' : string } |
   { 'Err' : string };
 export type Result_1 = { 'Ok' : null } |

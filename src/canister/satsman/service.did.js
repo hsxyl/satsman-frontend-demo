@@ -91,12 +91,15 @@ export const idlFactory = ({ IDL }) => {
     'total_btc_raised' : IDL.Nat64,
     'total_satsman_count' : IDL.Nat32,
   });
-  const PoolStatus = IDL.Variant({
-    'AddedLp' : IDL.Null,
+  const Filter = IDL.Variant({
     'Ongoing' : IDL.Null,
-    'LaunchSuccess' : IDL.Null,
+    'Completed' : IDL.Null,
     'Upcoming' : IDL.Null,
-    'LaunchFailed' : IDL.Null,
+  });
+  const Outcome = IDL.Variant({
+    'Failed' : IDL.Null,
+    'Listed' : IDL.Null,
+    'Success' : IDL.Null,
   });
   const SocialInfo = IDL.Record({
     'twitter' : IDL.Opt(IDL.Text),
@@ -126,7 +129,7 @@ export const idlFactory = ({ IDL }) => {
     'income_distribution' : IDL.Vec(IncomeDistributionItem),
   });
   const PoolBusinessStateView = IDL.Record({
-    'status' : PoolStatus,
+    'status' : Filter,
     'creator' : IDL.Text,
     'featured' : IDL.Bool,
     'start_height' : IDL.Nat32,
@@ -142,6 +145,7 @@ export const idlFactory = ({ IDL }) => {
     'rune_amount_for_lp' : IDL.Nat,
     'rune_amount_for_launch' : IDL.Nat,
     'pool_address' : IDL.Text,
+    'outcome' : Outcome,
     'launch_plan' : LaunchPlan,
     'add_lp_txid' : IDL.Opt(IDL.Text),
     'rune_id' : IDL.Text,
@@ -222,11 +226,6 @@ export const idlFactory = ({ IDL }) => {
     'StartHeight' : IDL.Null,
     'UserCount' : IDL.Null,
     'EndHeight' : IDL.Null,
-  });
-  const Filter = IDL.Variant({
-    'Ongoing' : IDL.Null,
-    'Completed' : IDL.Null,
-    'Upcoming' : IDL.Null,
   });
   const SortOrder = IDL.Variant({ 'Asc' : IDL.Null, 'Desc' : IDL.Null });
   const PageQuery = IDL.Record({

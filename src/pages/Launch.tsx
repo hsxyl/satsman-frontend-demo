@@ -14,6 +14,7 @@ import { convertMaestroUtxo } from "api/maestro";
 import { swapActor } from "canister/rich-swap/actor";
 import { PoolBasic } from "canister/rich-swap/service.did";
 import {
+  pool_outcome_str,
   pool_status_number,
   pool_status_str,
   SATSMAN_CANISTER_ID,
@@ -463,6 +464,7 @@ function UserManager({
   const [calling, setCalling] = useState<boolean>(false);
   const [tune, setTune] = useState<number | undefined>(userInfoOfLaunch?.tune);
   const status_str = pool_status_str(pool_business_state.status);
+  const outcome_str = pool_outcome_str(pool_business_state.outcome);
   const { createTransaction } = useRee();
 
   useEffect(() => {
@@ -511,7 +513,8 @@ function UserManager({
           (account?.used_btc_balance ?? BigInt(0))}
       </p>
       <p>
-        User Deposited Total Balance(Include Unconfirmed): {userInfoOfLaunch?.balance_include_unconfirmed ?? 0}
+        User Deposited Total Balance(Include Unconfirmed):{" "}
+        {userInfoOfLaunch?.balance_include_unconfirmed ?? 0}
       </p>
       <p>
         User Contributed Amount: {account?.total_contributed_btc ?? BigInt(0)}
@@ -555,7 +558,7 @@ function UserManager({
         </div>
       )}
 
-      {status_str === "AddedLp" && (
+      {outcome_str === "Listed" && (
         <div className="my-8">
           <Button
             loading={calling}
@@ -617,7 +620,7 @@ function UserManager({
 
       <div className="flex items-center gap-4 my-4">
         <input
-        readOnly={!!referralCode}
+          readOnly={!!referralCode}
           className="border text-black border-gray-300 rounded px-2 py-1"
           width={40}
           value={referralCode}
@@ -625,7 +628,10 @@ function UserManager({
           placeholder={"Referral Code"}
         />
         <Button
-          disabled={ !!referralCode || (status_str !== "Ongoing" && status_str !== "Upcoming")}
+          disabled={
+            !!referralCode ||
+            (status_str !== "Ongoing" && status_str !== "Upcoming")
+          }
           loading={calling}
           onClick={async () => {
             try {
@@ -650,7 +656,7 @@ function UserManager({
                     throw new Error(e.Err.toString());
                   }
                   if ("Ok" in e) {
-                    alert("Set Referral Code Success!" );
+                    alert("Set Referral Code Success!");
                   }
                 });
               refetchUserInfo();
@@ -823,6 +829,7 @@ function LaunchSuccess({
   const [calling, setCalling] = useState<boolean>(false);
 
   const status_str = pool_status_str(pool_business_state.status);
+  const outcome_str = pool_outcome_str(pool_business_state.outcome);
 
   useEffect(() => {
     const f = async () => {
@@ -845,15 +852,22 @@ function LaunchSuccess({
     console.log({ pubkey });
   };
 
+  // const lpStatus = ()=> {
+  //   switch (outcome_str) {
+  //     case "Success":
+
+  //   }
+  // }
+
   const lpStatus = () => {
-    switch (status_str) {
-      case "LaunchSuccess":
+    switch (outcome_str) {
+      case "Success":
         return (
           <div>
             <Button
               disabled={
                 !paymentAddress ||
-                status_str !== "LaunchSuccess" ||
+                outcome_str !== "Success" ||
                 !launchSwapPool
               }
               loading={isLoadingUtxo || calling}
@@ -914,10 +928,10 @@ function LaunchSuccess({
             </Button>
           </div>
         );
-      case "AddedLp":
+      case "Listed":
         return <p className="text-green-500">Liquidity Added</p>;
       default:
-        return <div>Unknown Status: {status_str}</div>;
+        return <div>Unexpected Outcome: {outcome_str}</div>;
     }
   };
 
@@ -993,6 +1007,12 @@ function LaunchInfo({
         {pool_business_state.end_height}
       </p>
       <p>Status: {status_str}</p>
+      {
+        status_str === "Completed" &&
+        <p>
+          Outcome: {pool_outcome_str(pool_business_state.outcome)}
+        </p>
+      }
       <p>
         Rasing Target: {Number(pool_business_state.raising_target) / 1000} K
         Sats
