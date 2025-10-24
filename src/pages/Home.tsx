@@ -99,7 +99,7 @@ export function Home() {
           <p>Satsman</p>
           <p>
             {blockAggregationData?.[1].total_btc_raised} Sats/B from{" "}
-            {blockAggregationData?.[1].total_btc_raised} Satsmen
+            {blockAggregationData?.[1].total_satsman_count} Satsmen
           </p>
         </div>
       </div>

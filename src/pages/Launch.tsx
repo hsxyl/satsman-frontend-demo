@@ -629,7 +629,7 @@ function UserManager({
         />
         <Button
           disabled={
-            !!referralCode ||
+            (userInfoOfLaunch?.referred_by_code.length??0)>0 ||
             (status_str !== "Ongoing" && status_str !== "Upcoming")
           }
           loading={calling}
@@ -731,7 +731,7 @@ function UserManager({
               const txid = await tx.send(signedPsbtHex);
 
               console.log("invoke success and txid ", txid);
-              alert("Create Launch Success: " + txid);
+              alert("Topup Success: " + txid);
             } catch (e) {
               console.error(e);
               alert("Topup failed: " + (e as Error).message);
