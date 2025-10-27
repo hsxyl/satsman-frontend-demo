@@ -85,7 +85,7 @@ export function UserProfile() {
             ),
             duration: `${record.start_height} - ${record.end_height}`,
             target: `${(Number(record.launch_plan.raising_target_sats) / 1000).toFixed(2)} K Sats`,
-            tvl_satsman: `${(Number(record.highest_block_states[0]?.total_raised_btc_balances) / 1000000).toFixed(4)} M S / ${record.user_tunes.length}`,
+            tvl_satsman: `${(Number(record.highest_block_states[0]?.total_auction_raised_amount) / 1000000).toFixed(4)} M S / ${record.user_tunes.length}`,
             outcome: pool_status_str(record.status),
           })) || []
         }
@@ -104,7 +104,7 @@ export function UserProfile() {
               </div>
             ),
             duration: `${record.start_height} - ${record.end_height}`,
-            tvl_satsmen: `${(Number(record.highest_block_states[0]?.total_raised_btc_balances) / 1000000).toFixed(4)} M S / ${record.user_tunes.length}`,
+            tvl_satsmen: `${(Number(record.highest_block_states[0]?.total_auction_raised_amount) / 1000000).toFixed(4)} M S / ${record.user_tunes.length}`,
             status: pool_status_str(record.status),
             satsman: `${record.user_tunes.length}`,
           })) || []

@@ -126,14 +126,14 @@ export function Home() {
                 <p>
                   Received:{" "}
                   {Number(
-                    item.highest_block_states[0]?.total_raised_btc_balances ?? 0
+                    item.highest_block_states[0]?.total_paid_sats ?? 0
                   ) / 1000}{" "}
                   K Sats
                 </p>
                 <p>{item.user_tunes.length} Satsman</p>
                 <p>
                   paying{" "}
-                  {item.highest_block_states[0]?.paying_sats_in_current_block ??
+                  {item.highest_block_states[0]?.paid_sats_in_current_block ??
                     0}{" "}
                   S/B
                 </p>
@@ -179,7 +179,7 @@ export function Home() {
                   Deposit{" "}
                   {Number(
                     item.highest_block_states[0]
-                      ?.user_total_balance_in_current_block ?? 0
+                      ?.total_deposit_btc_balances ?? 0
                   ) / 1000}{" "}
                   K Sats
                 </p>
@@ -217,7 +217,7 @@ export function Home() {
                 <p>
                   Received{" "}
                   {Number(
-                    item.highest_block_states[0]?.total_raised_btc_balances! ??
+                    item.highest_block_states[0]?.total_auction_raised_amount! ??
                       0
                   ) / 1000}{" "}
                   K Sats from {item.user_tunes.length} Satsman

@@ -34,28 +34,35 @@ export const idlFactory = ({ IDL }) => {
   const Result = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const Result_1 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
   const Account = IDL.Record({
+    'minted_rune_in_current_block' : IDL.Nat,
     'withdraw_txid' : IDL.Opt(IDL.Text),
-    'receive_rune_in_current_block' : IDL.Nat,
+    'price_in_current_block' : IDL.Float64,
+    'total_paid_sats' : IDL.Nat64,
     'last_update_block' : IDL.Nat32,
-    'tune' : IDL.Nat8,
-    'total_contributed_btc' : IDL.Nat64,
-    'pay_in_current_block' : IDL.Nat64,
-    'btc_balance' : IDL.Nat64,
-    'referral_reward' : IDL.Float64,
+    'total_minted_rune_amount' : IDL.Nat,
     'address' : IDL.Text,
+    'sats_balance' : IDL.Nat64,
+    'tune_in_current_block' : IDL.Nat8,
+    'total_referral_reward' : IDL.Float64,
     'withdrawn' : IDL.Bool,
-    'used_btc_balance' : IDL.Nat64,
-    'minted_rune_amount' : IDL.Nat,
+    'paid_sats_in_current_block' : IDL.Nat64,
+    'total_avg_price' : IDL.Float64,
     'referral_reward_in_current_block' : IDL.Float64,
   });
   const BlockState = IDL.Record({
-    'paying_sats_in_current_block' : IDL.Nat64,
+    'minted_rune_in_current_block' : IDL.Nat,
     'price_in_current_block' : IDL.Float64,
+    'total_paid_sats' : IDL.Nat64,
+    'auction_raised_amount_in_current_block' : IDL.Nat64,
     'total_minted_rune' : IDL.Nat,
-    'user_total_balance_in_current_block' : IDL.Nat64,
+    'total_auction_raised_amount' : IDL.Nat64,
     'user_accounts' : IDL.Vec(IDL.Tuple(IDL.Text, Account)),
+    'total_deposit_btc_balances' : IDL.Nat64,
+    'total_referral_reward' : IDL.Float64,
+    'avg_price' : IDL.Float64,
     'block_height' : IDL.Nat32,
-    'total_raised_btc_balances' : IDL.Nat64,
+    'paid_sats_in_current_block' : IDL.Nat64,
+    'referral_reward_in_current_block' : IDL.Float64,
   });
   const Config = IDL.Record({
     'maximum_raising_target' : IDL.Nat64,
@@ -171,6 +178,11 @@ export const idlFactory = ({ IDL }) => {
       'pool_address' : IDL.Text,
     }),
     'CreatePool' : GetPoolInfoArgs,
+    'DistributeIncome' : IDL.Record({
+      'btc_amount' : IDL.Nat64,
+      'rune_amount' : IDL.Nat,
+      'pool_address' : IDL.Text,
+    }),
     'WithdrawRune' : IDL.Record({
       'user' : IDL.Text,
       'rune_amount' : IDL.Nat,
@@ -179,11 +191,6 @@ export const idlFactory = ({ IDL }) => {
     'TopUp' : IDL.Record({
       'user' : IDL.Text,
       'amount' : IDL.Nat64,
-      'pool_address' : IDL.Text,
-    }),
-    'AddLp' : IDL.Record({
-      'btc_amount' : IDL.Nat64,
-      'rune_amount' : IDL.Nat,
       'pool_address' : IDL.Text,
     }),
   });

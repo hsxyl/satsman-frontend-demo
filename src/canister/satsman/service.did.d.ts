@@ -3,18 +3,19 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface Account {
+  'minted_rune_in_current_block' : bigint,
   'withdraw_txid' : [] | [string],
-  'receive_rune_in_current_block' : bigint,
+  'price_in_current_block' : number,
+  'total_paid_sats' : bigint,
   'last_update_block' : number,
-  'tune' : number,
-  'total_contributed_btc' : bigint,
-  'pay_in_current_block' : bigint,
-  'btc_balance' : bigint,
-  'referral_reward' : number,
+  'total_minted_rune_amount' : bigint,
   'address' : string,
+  'sats_balance' : bigint,
+  'tune_in_current_block' : number,
+  'total_referral_reward' : number,
   'withdrawn' : boolean,
-  'used_btc_balance' : bigint,
-  'minted_rune_amount' : bigint,
+  'paid_sats_in_current_block' : bigint,
+  'total_avg_price' : number,
   'referral_reward_in_current_block' : number,
 }
 export interface BlockAggregateData {
@@ -24,13 +25,19 @@ export interface BlockAggregateData {
   'total_paying_users' : number,
 }
 export interface BlockState {
-  'paying_sats_in_current_block' : bigint,
+  'minted_rune_in_current_block' : bigint,
   'price_in_current_block' : number,
+  'total_paid_sats' : bigint,
+  'auction_raised_amount_in_current_block' : bigint,
   'total_minted_rune' : bigint,
-  'user_total_balance_in_current_block' : bigint,
+  'total_auction_raised_amount' : bigint,
   'user_accounts' : Array<[string, Account]>,
+  'total_deposit_btc_balances' : bigint,
+  'total_referral_reward' : number,
+  'avg_price' : number,
   'block_height' : number,
-  'total_raised_btc_balances' : bigint,
+  'paid_sats_in_current_block' : bigint,
+  'referral_reward_in_current_block' : number,
 }
 export interface CoinBalance { 'id' : string, 'value' : bigint }
 export interface Config {
@@ -61,22 +68,20 @@ export type Event = {
   } |
   { 'CreatePool' : GetPoolInfoArgs } |
   {
+    'DistributeIncome' : {
+      'btc_amount' : bigint,
+      'rune_amount' : bigint,
+      'pool_address' : string,
+    }
+  } |
+  {
     'WithdrawRune' : {
       'user' : string,
       'rune_amount' : bigint,
       'pool_address' : string,
     }
   } |
-  {
-    'TopUp' : { 'user' : string, 'amount' : bigint, 'pool_address' : string }
-  } |
-  {
-    'AddLp' : {
-      'btc_amount' : bigint,
-      'rune_amount' : bigint,
-      'pool_address' : string,
-    }
-  };
+  { 'TopUp' : { 'user' : string, 'amount' : bigint, 'pool_address' : string } };
 export type ExchangeError = { 'InvalidPageQuery' : string } |
   { 'InvalidRuneName' : [string, string] } |
   { 'InvalidArgs' : string } |
