@@ -324,8 +324,8 @@ function UpcomingHint({
     <div>
       <h1>Upcoming Hint</h1>
       <p>
-        {highest_block_state?.total_paid_sats ?? 0n} K S from
-        {highest_block_state?.user_accounts.length ?? 0} Satsmen, avg power
+        {highest_block_state?.total_paid_sats ?? 0n} K S from{" "}
+        {pool_business_state.user_tunes.length ?? 0} Satsmen, avg power {" "}
         {pool_business_state.user_tunes.reduce((acc, e) => acc + e[1], 0) /
           (pool_business_state.user_tunes.length || 1)}
         %, about to pay{" "}
