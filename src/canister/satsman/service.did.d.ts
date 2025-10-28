@@ -3,12 +3,12 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface Account {
-  'minted_rune_in_current_block' : bigint,
+  'minted_rune_in_current_block' : number,
   'withdraw_txid' : [] | [string],
   'price_in_current_block' : number,
   'total_paid_sats' : bigint,
   'last_update_block' : number,
-  'total_minted_rune_amount' : bigint,
+  'total_minted_rune_amount' : number,
   'address' : string,
   'sats_balance' : bigint,
   'tune_in_current_block' : number,
@@ -44,6 +44,7 @@ export interface Config {
   'maximum_raising_target' : bigint,
   'minimum_top_up_sats' : bigint,
   'maximum_start_height_offset' : number,
+  'maximum_rune_amount' : bigint,
   'exchange_fee_percentage' : number,
   'finalize_threshold' : number,
   'launch_span_options' : Uint32Array | number[],
@@ -52,6 +53,7 @@ export interface Config {
   'minimum_raising_target' : bigint,
   'maximum_top_up_sats' : bigint,
   'create_fee_sats' : bigint,
+  'minimum_rune_amount' : bigint,
   'minimum_start_height_offset' : number,
 }
 export interface CreateLaunchState {

@@ -34,12 +34,12 @@ export const idlFactory = ({ IDL }) => {
   const Result = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const Result_1 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
   const Account = IDL.Record({
-    'minted_rune_in_current_block' : IDL.Nat,
+    'minted_rune_in_current_block' : IDL.Float64,
     'withdraw_txid' : IDL.Opt(IDL.Text),
     'price_in_current_block' : IDL.Float64,
     'total_paid_sats' : IDL.Nat64,
     'last_update_block' : IDL.Nat32,
-    'total_minted_rune_amount' : IDL.Nat,
+    'total_minted_rune_amount' : IDL.Float64,
     'address' : IDL.Text,
     'sats_balance' : IDL.Nat64,
     'tune_in_current_block' : IDL.Nat8,
@@ -68,6 +68,7 @@ export const idlFactory = ({ IDL }) => {
     'maximum_raising_target' : IDL.Nat64,
     'minimum_top_up_sats' : IDL.Nat64,
     'maximum_start_height_offset' : IDL.Nat32,
+    'maximum_rune_amount' : IDL.Nat,
     'exchange_fee_percentage' : IDL.Nat8,
     'finalize_threshold' : IDL.Nat32,
     'launch_span_options' : IDL.Vec(IDL.Nat32),
@@ -76,6 +77,7 @@ export const idlFactory = ({ IDL }) => {
     'minimum_raising_target' : IDL.Nat64,
     'maximum_top_up_sats' : IDL.Nat64,
     'create_fee_sats' : IDL.Nat64,
+    'minimum_rune_amount' : IDL.Nat,
     'minimum_start_height_offset' : IDL.Nat32,
   });
   const CreateLaunchState = IDL.Record({

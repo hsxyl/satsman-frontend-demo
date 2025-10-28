@@ -400,7 +400,7 @@ function UserInfo({
             <p>
               Past Price:{" "}
               {Number(highest_block_state?.price_in_current_block ?? 0n) /
-                Number(highest_block_state?.total_minted_rune ?? NaN)}
+                Number(highest_block_state?.total_minted_rune ?? 0n)}
             </p>
             <p>
               Remain:{" "}
@@ -599,7 +599,7 @@ function UserManager({
                     account!.sats_balance -
                     account!.total_paid_sats +
                     BigInt(Math.floor(account!.total_referral_reward)),
-                  withdrawRuneAmount: account!.total_minted_rune_amount,
+                  withdrawRuneAmount: BigInt(account!.total_minted_rune_amount),
                 })
                   .then((e) => {
                     console.log("invoke success and txid ", e);
