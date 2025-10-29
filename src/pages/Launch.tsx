@@ -212,7 +212,8 @@ function EndUserTable({
           return {
             statsman: shortenAddress(e[0]),
             deposited:
-              user_accounts.find((ua) => ua[0] === e[0])?.[1].sats_balance || 0n,
+              user_accounts.find((ua) => ua[0] === e[0])?.[1].sats_balance ||
+              0n,
             contributed: account?.total_paid_sats || 0n,
             received: account?.total_minted_rune_amount || 0n,
             avg_price:
@@ -325,12 +326,12 @@ function UpcomingHint({
       <h1>Upcoming Hint</h1>
       <p>
         {highest_block_state?.total_paid_sats ?? 0n} K S from{" "}
-        {pool_business_state.user_tunes.length ?? 0} Satsmen, avg power {" "}
+        {pool_business_state.user_tunes.length ?? 0} Satsmen, avg power{" "}
         {pool_business_state.user_tunes.reduce((acc, e) => acc + e[1], 0) /
           (pool_business_state.user_tunes.length || 1)}
-        %, about to pay{" "}
-        {highest_block_state?.paid_sats_in_current_block ?? 0n} K S/B at price
-        of {highest_block_state?.price_in_current_block ?? 0n} S/R.
+        %, about to pay {highest_block_state?.paid_sats_in_current_block ?? 0n}{" "}
+        K S/B at price of {highest_block_state?.price_in_current_block ?? 0n}{" "}
+        S/R.
       </p>
       <Table
         dataSource={pool_business_state.user_tunes.map((e) => {
@@ -338,7 +339,8 @@ function UpcomingHint({
           return {
             statsman: shortenAddress(e[0]),
             deposited:
-              user_accounts.find((ua) => ua[0] === e[0])?.[1].sats_balance || 0n,
+              user_accounts.find((ua) => ua[0] === e[0])?.[1].sats_balance ||
+              0n,
             power: e[1],
             about_to_pay: account?.sats_balance ?? 0 / auction_duration,
             update_height: account?.last_update_block || 0,
@@ -391,10 +393,7 @@ function UserInfo({
         <div className="flex flex-row">
           <div className="flex flex-col">
             <p>All Satsman</p>
-            <p>
-              Deposited:{" "}
-              {highest_block_state?.total_deposit_btc_balances}
-            </p>
+            <p>Deposited: {highest_block_state?.total_deposit_btc_balances}</p>
             <p>Paid: {highest_block_state?.total_paid_sats} S</p>
             <p>Received: {highest_block_state?.total_minted_rune} R</p>
             <p>
@@ -425,8 +424,7 @@ function UserInfo({
               <p>Paid: {account.total_paid_sats} S</p>
               <p>Received: {account.total_minted_rune_amount} R</p>
               <p>
-                Past Price:{" "}
-                {Number(account.total_avg_price) }
+                Past Price: {Number(account.total_avg_price)}
                 S/R
               </p>
               <p>Remain: {account.sats_balance - account.total_paid_sats}</p>
@@ -519,9 +517,7 @@ function UserManager({
         User Deposited Total Balance(Include Unconfirmed):{" "}
         {userInfoOfLaunch?.balance_include_unconfirmed ?? 0}
       </p>
-      <p>
-        User Contributed Amount: {account?.total_paid_sats ?? BigInt(0)}
-      </p>
+      <p>User Contributed Amount: {account?.total_paid_sats ?? BigInt(0)}</p>
       <p>
         User Received Rune:{" "}
         {userInfoOfLaunch?.account?.[0]?.total_minted_rune_amount || 0}
@@ -587,7 +583,7 @@ function UserManager({
                   userBtcUtxos: btcUtxos!.map((e) =>
                     convertMaestroUtxo(e, paymentPublicKey)
                   ),
-                  runeId: pool_business_state.rune_id[0]!,
+                  runeId: pool_business_state.rune_id,
                   launchPoolBtcUtxo: convertUtxo(pool_state.utxo, key),
 
                   paymentAddress: paymentAddress,
@@ -785,11 +781,9 @@ function UserManager({
       </div>
 
       {/* <LaunchSuccess pool_business_state={pool_business_state} /> */}
-      {
-        status_str === "Completed" && (
-          <LaunchComplete pool_business_state={pool_business_state} />
-        )
-      }
+      {status_str === "Completed" && (
+        <LaunchComplete pool_business_state={pool_business_state} />
+      )}
     </div>
   );
 }
@@ -846,7 +840,7 @@ function LaunchSuccess({
   pool_business_state: PoolBusinessStateView;
 }) {
   const rune_name = pool_business_state.launch_plan.rune_name;
-  const rune_id = pool_business_state.rune_id[0]!;
+  const rune_id = pool_business_state.rune_id;
   const [launchSwapPool, setLaunchSwapPool] = useState<PoolBasic | undefined>(
     undefined
   );
@@ -859,6 +853,7 @@ function LaunchSuccess({
   const status_str = pool_status_str(pool_business_state.status);
   const outcome_str = pool_outcome_str(pool_business_state.outcome);
   const { createTransaction } = useRee();
+  const last_block_state = pool_business_state.highest_block_states[0];
 
   useEffect(() => {
     const f = async () => {
@@ -944,24 +939,24 @@ function LaunchSuccess({
                       {
                         to: launchSwapPool!.address,
                         coin: {
-                          id: pool_business_state.rune_id[0]!,
+                          id: pool_business_state.rune_id,
                           value: pool_business_state.rune_amount_for_lp,
                         },
                       },
 
-                      ...(pool_business_state.launch_plan.income_distribution.map(
-                        (e): OutputCoin  => ({
+                      ...pool_business_state.launch_plan.income_distribution.map(
+                        (e): OutputCoin => ({
                           to: e.address,
                           coin: {
                             id: BITCOIN.id,
-                            value: (BigInt(
-                              pool_business_state.btc_amount_for_lp *
-                                BigInt(e.percentage) /
+                            value: BigInt(
+                              (pool_business_state.btc_amount_for_lp *
+                                BigInt(e.percentage)) /
                                 100n
-                            ) ),
+                            ),
                           },
                         })
-                      )),  
+                      ),
                     ],
                     nonce: pool_state.nonce + BigInt(1),
                   });
@@ -983,10 +978,10 @@ function LaunchSuccess({
                       {
                         from: pool_business_state.pool_address!,
                         coin: {
-                          id: pool_business_state.rune_id[0]!,
+                          id: pool_business_state.rune_id,
                           value: pool_business_state.rune_amount_for_lp,
                         },
-                      }
+                      },
                     ],
                     outputCoins: [],
                     nonce: pool_state.nonce + BigInt(1),
@@ -1024,7 +1019,7 @@ function LaunchSuccess({
                 }
               }}
             >
-              {paymentAddress ? "Add Lp" : "Please Connect Wallet"}
+              {paymentAddress ? "Distribute Income" : "Please Connect Wallet"}
             </Button>
           </div>
         );
@@ -1045,19 +1040,60 @@ function LaunchSuccess({
             <p>Pool Address: {launchSwapPool.address}</p>
           </div>
         ) : (
-          <Button onClick={createPool}>Create RichSwap Pool</Button>
+          <Button
+            loading={calling}
+            onClick={async () => {
+              try {
+                setCalling(true);
+                await createPool();
+                alert("Create RichSwap Pool Success");
+              } catch (e) {
+                alert("Create RichSwap Pool Failed: " + (e as Error).message);
+              } finally {
+                setCalling(false);
+              }
+            }}
+          >
+            Create RichSwap Pool
+          </Button>
         )}
       </div>
       <Divider />
       {launchSwapPool && (
         <div>
-          <h2 className="text-xl font-semibold mb-2">Add Lp</h2>
+          <h2 className="text-xl font-semibold mb-2">Distribute Income</h2>
+          <p>
+            Total Raised Amount: {last_block_state?.total_auction_raised_amount}
+          </p>
+          <p>
+            Referral Reward Amount: {last_block_state?.total_referral_reward}
+          </p>
+          <p>
+            Total Exchange Fee: {last_block_state?.total_exchange_fee}
+          </p>
           <p className="my-1">
             Btc Amount for Lp: {pool_business_state.btc_amount_for_lp}
           </p>
           <p className="my-1">
             Rune Amount for Lp: {pool_business_state.rune_amount_for_lp}
           </p>
+          <p>
+            {pool_business_state.launch_plan.income_distribution
+              .map((e) => e.percentage)
+              .reduce((a, b) => a + b, 0)}
+            % will be received by{" "}
+            {pool_business_state.launch_plan.income_distribution.length}{" "}
+            addresses
+          </p>
+          {pool_business_state.launch_plan.income_distribution.map(
+            (item, index) => (
+              <p key={index}>
+                {" "}
+                - {item.percentage}% ({(Number(last_block_state?.total_auction_raised_amount ??0) * item.percentage / 100).toFixed()}) will be received by{" "}
+                {shortenAddress(item.address)} ({item.label})
+              </p>
+            )
+          )}
           {lpStatus()}
         </div>
       )}
