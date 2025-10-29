@@ -23,6 +23,7 @@ import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import _ from "lodash";
 import { RuneEntry } from "canister/runes-indexer/service.did";
 import { useRee } from "@omnity/ree-client-ts-sdk";
+import { LaunchPlan } from "types";
 
 type FieldType = {
   rune_name?: string;
@@ -107,7 +108,7 @@ export function CreateLaunch() {
   const [tokenForLp, setTokenForLp] = useState<string>("Wait For Calculation...");
   const [runeInfo, setRuneInfo] = useState<RuneEntry | undefined>(undefined);
   const [runeName, setRuneName] = useState<string>("");
-  const [isMeme, setIsMeme] = useState<boolean>(false);
+  const [isFairLaunch, setIsFairLaunch] = useState<boolean>(false);
   const [calling, setCalling] = useState<boolean>(false);
   const {
     data: config,
@@ -142,7 +143,7 @@ export function CreateLaunch() {
       Number(config!.finalize_threshold)
     );
     let sup = runeSupply(runeInfo);
-    if (isMeme) {
+    if (isFairLaunch) {
       setTokenForAuction(((sup * BigInt(51)) / BigInt(100)).toString());
       setTokenForLp(((sup * BigInt(49)) / BigInt(100)).toString());
       console.log({
@@ -154,15 +155,15 @@ export function CreateLaunch() {
         setTokenForLp("Wait For Calculation...");
     }
     return [finished, sup];
-  }, [latestBlockHeight, runeInfo, config, isMeme]);
+  }, [latestBlockHeight, runeInfo, config, isFairLaunch]);
 
   useEffect(() => {
     console.log({ lpPercentage, tokenForAuction });
-    if (!lpPercentage || !tokenForAuction || isMeme) {
+    if (!lpPercentage || !tokenForAuction || isFairLaunch) {
       return;
     }
     setTokenForLp(((BigInt(tokenForAuction) * BigInt(lpPercentage)) / BigInt(100)).toString());
-  }, [lpPercentage, tokenForAuction, isMeme]);
+  }, [lpPercentage, tokenForAuction, isFairLaunch]);
 
   const { signPsbt } = useLaserEyes();
   const { createTransaction, address, paymentAddress } = useRee();
@@ -197,31 +198,33 @@ export function CreateLaunch() {
       //     create_launch_state.utxo,
       //     create_launch_state.key
       //   );
-      let action_params = {
+      let action_params: LaunchPlan= {
         rune_name: runeName,
         rune_id: rune_id,
         token_for_auction: tokenForAuction,
         token_for_lp: tokenForLp,
-        income_for_lp_percentage: isMeme? 100 - config!.exchange_fee_percentage - config!.referral_bonus_percentage :lpPercentage,
+        income_for_lp_percentage: isFairLaunch? 
+        100 - config!.exchange_fee_percentage - config!.referral_bonus_percentage :
+        lpPercentage!,
         income_distribution: (values.income_distribution ?? []).map((item) => ({
           label: item.label,
           percentage: Number(item.percentage!),
           address: item.address,
         })),
 
-        description: null,
+        description: undefined,
         social_info: {
-          twitter: null,
-          github: null,
-          discord: null,
-          telegram: null,
-          website: null,
+          twitter: undefined,
+          github: undefined,
+          discord: undefined,
+          telegram: undefined,
+          website: undefined,
         },
         start_height: Number(values.auction_start_height!),
         span_blocks: Number(values.span_blocks!),
         raising_target_sats: values.raising_target_sats! * 1000,
-        banner: null,
-        is_meme_template: isMeme,
+        banner: undefined,
+        is_fair_launch: isFairLaunch,
       };
 
       console.log({ action_params: JSON.stringify(action_params) });
@@ -300,11 +303,11 @@ export function CreateLaunch() {
 
         <div className="my-2">
           <span className="mr-2">fair launch</span>
-          <Switch checked={isMeme} onChange={setIsMeme} />
+          <Switch checked={isFairLaunch} onChange={setIsFairLaunch} />
         </div>
 
         <Form.Item name="token_for_auction" label="Token for Auction: ">
-          {isMeme ? (
+          {isFairLaunch ? (
             <span>{tokenForAuction}</span>
           ) : (
             // <input
@@ -345,7 +348,7 @@ export function CreateLaunch() {
             })}
           </Select>
         </Form.Item>
-        {!isMeme && (
+        {!isFairLaunch && (
           <>
             <Form.Item name="lp_percentage" label="Auction Income for LP (%): ">
               <Input
@@ -366,7 +369,7 @@ export function CreateLaunch() {
         <Form.Item name="token_for_lp" label="Token for Lp: ">
             <span>{tokenForLp}</span>
         </Form.Item>
-        {!isMeme && (
+        {!isFairLaunch && (
           <>
             <p className="mr-4">{100 - (lpPercentage??0) - (config?.exchange_fee_percentage??0) - (config?.referral_bonus_percentage??0)}% token auction income will be receive by:</p>
             <Form.List name="income_distribution">

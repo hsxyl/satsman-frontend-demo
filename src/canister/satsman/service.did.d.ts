@@ -146,12 +146,12 @@ export interface IntentionSet {
 export interface LaunchPlan {
   'start_height' : number,
   'income_for_lp_percentage' : number,
-  'is_meme_template' : boolean,
   'social_info' : SocialInfo,
   'token_for_lp' : string,
   'rune_name' : string,
   'banner' : [] | [string],
   'description' : [] | [string],
+  'is_fair_launch' : boolean,
   'span_blocks' : number,
   'raising_target_sats' : bigint,
   'token_for_auction' : string,

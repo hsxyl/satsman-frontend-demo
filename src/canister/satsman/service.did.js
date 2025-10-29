@@ -127,12 +127,12 @@ export const idlFactory = ({ IDL }) => {
   const LaunchPlan = IDL.Record({
     'start_height' : IDL.Nat32,
     'income_for_lp_percentage' : IDL.Nat8,
-    'is_meme_template' : IDL.Bool,
     'social_info' : SocialInfo,
     'token_for_lp' : IDL.Text,
     'rune_name' : IDL.Text,
     'banner' : IDL.Opt(IDL.Text),
     'description' : IDL.Opt(IDL.Text),
+    'is_fair_launch' : IDL.Bool,
     'span_blocks' : IDL.Nat32,
     'raising_target_sats' : IDL.Nat64,
     'token_for_auction' : IDL.Text,
