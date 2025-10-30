@@ -11,7 +11,7 @@ export function AllLaunch() {
     page_size: 100,
     sort_by: [
       {
-        StartHeight: null,
+        UserCount: null,
       },
     ],
     sort_order: [],
@@ -19,6 +19,8 @@ export function AllLaunch() {
     search_text: [],
     featured_first: false,
   });
+
+  console.log("all launch pools:", data);
 
   const columns = [
     {
@@ -66,7 +68,7 @@ export function AllLaunch() {
             data?.items.map((pool) => ({
               token: <div>{pool.launch_plan.rune_name} {pool.featured && <StarFilled style={{ color: "gold" }} />}</div>,
               duration: `${pool.start_height} - ${pool.end_height}`,
-              tvl: `${(Number(pool.highest_block_states[0]?.total_raised_btc_balances??0) / 1000000).toFixed(4)} M S`,
+              tvl: `${(Number(pool.highest_block_states[0]?.total_paid_sats??0) / 1000000).toFixed(4)} M S`,
               satsman: `${(Number(pool.user_tunes.length))}`,
               status: pool_status_str(pool.status),
             })) || []

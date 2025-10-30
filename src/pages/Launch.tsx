@@ -44,7 +44,7 @@ import { topupTx } from "utils/tx-helper/topup";
 import { withdrawTx } from "utils/tx-helper/withdraw";
 import { Line } from "@ant-design/charts";
 import { StarFilled } from "@ant-design/icons";
-import { OutputCoin, useRee } from "@omnity/ree-client-ts-sdk";
+import { Intention, OutputCoin, useRee } from "@omnity/ree-client-ts-sdk";
 import { convertUnspentOutputToUtxo } from "types";
 import { BITCOIN, RICHSWAP_EXCHANGE_ID } from "../constants";
 import { create } from "lodash";
@@ -525,32 +525,69 @@ function UserManager({
       return "Launch is successful, but need distribution income first.";
     }
 
+    if (outcome_str === "Failed") {
+      return null;
+    }
+
     if (account?.withdrawn) {
       return "You have already withdrawn,txid:" + account.withdraw_txid;
     }
 
-    return null;
+    const withdrawableSats =
+      (account?.sats_balance ?? BigInt(0)) -
+      (account?.total_paid_sats ?? BigInt(0)) +
+      BigInt(account?.total_referral_reward ?? 0);
+
+    if (withdrawableSats <= BigInt(0)) {
+      return "No sats to withdraw.";
+    }
+
+    return `Withdraw ${withdrawableSats} sats and ${
+      account?.total_minted_rune_amount ?? 0
+    } rune`;
+  };
+
+  const withdrawFailedButtonHint = () => {
+    if (status_str !== "Completed") {
+      return "Launch not completed yet.";
+    }
+
+    if (outcome_str === "Success" || outcome_str === "Listed") {
+      return null;
+    }
+
+    if (account?.withdrawn) {
+      return "You have already withdrawn,txid:" + account.withdraw_txid;
+    }
+
+    const withdrawableSats = account?.sats_balance ?? BigInt(0);
+
+    if (withdrawableSats <= BigInt(0)) {
+      return "No sats to withdraw.";
+    }
+
+    return `Launch is failed, you can Withdraw ${withdrawableSats} sats`;
   };
 
   return (
     <div>
       <h2 className="text-black text-2xl font-bold mb-4">User Manager</h2>
       <p>
-        User Deposit Balance:{" "}
+        Your Available Balance:{" "}
         {(account?.sats_balance ?? BigInt(0)) -
           (account?.total_paid_sats ?? BigInt(0))}{" "}
         S
       </p>
       <p>
-        User Deposited Total Balance(Include Unconfirmed):{" "}
+        Your Deposited Total Balance(Include Unconfirmed):{" "}
         {userInfoOfLaunch?.balance_include_unconfirmed ?? 0} S
       </p>
-      <p>User Contributed Amount: {account?.total_paid_sats ?? BigInt(0)} S</p>
+      <p>Your Contributed Amount: {account?.total_paid_sats ?? BigInt(0)} S</p>
       <p>
-        User Received Rune:{" "}
+        Your Received Rune:{" "}
         {userInfoOfLaunch?.account?.[0]?.total_minted_rune_amount || 0} R
       </p>
-      <p>User Referral Reward: {account?.total_referral_reward ?? 0} S</p>
+      <p>Your Referral Reward: {account?.total_referral_reward ?? 0} S</p>
 
       {userInfoOfLaunch?.my_referral_code.length === 1 ? (
         <p className="mb-8">
@@ -851,9 +888,27 @@ function UserManager({
         {withdrawButtonHint()}
       </div>
 
+      <div className="my-8">
+        <Button
+          className="mr-4"
+          loading={calling}
+          disabled={
+            account?.withdrawn ||
+            status_str !== "Completed" ||
+            outcome_str !== "Failed"
+          }
+        >
+          {account?.withdrawn ? "Already Withdrawn" : "Withdraw When Failed"}
+        </Button>
+        {withdrawFailedButtonHint()}
+      </div>
+
       <div className="my-4">
         {poolState?.withdrawn_rune ? (
-          <p>Creator has withdrawn rune, txid: {pool_business_state.creator_withdraw_rune_txid}.</p>
+          <p>
+            Creator has withdrawn rune, txid:{" "}
+            {pool_business_state.creator_withdraw_rune_txid}.
+          </p>
         ) : (
           <Button
             disabled={outcome_str !== "Failed"}
@@ -886,8 +941,9 @@ function UserManager({
                       to: pool_business_state.creator,
                       coin: {
                         id: pool_business_state.rune_id,
-                        value: BigInt(pool_business_state.rune_amount_for_launch) 
-                        + BigInt(pool_business_state.rune_amount_for_lp),
+                        value:
+                          BigInt(pool_business_state.rune_amount_for_launch) +
+                          BigInt(pool_business_state.rune_amount_for_lp),
                       },
                     },
                   ],
@@ -1059,7 +1115,7 @@ function LaunchSuccess({
                   const tx = await createTransaction();
 
                   // execute add_lp on satsman canister
-                  let intentiont1 = {
+                  let intentiont1: Intention = {
                     exchangeId: SATSMAN_EXCHANGE_ID,
                     poolAddress: pool_business_state.pool_address!,
                     poolUtxos: [
@@ -1070,6 +1126,13 @@ function LaunchSuccess({
                     action: "distribute_income",
                     inputCoins: [],
                     outputCoins: [
+                      {
+                        to: launchSwapPool!.address,
+                        coin: {
+                          id: BITCOIN.id,
+                          value: pool_business_state.btc_amount_for_lp,
+                        },
+                      },
                       {
                         to: launchSwapPool!.address,
                         coin: {
@@ -1116,7 +1179,7 @@ function LaunchSuccess({
                       },
                     ],
                     outputCoins: [],
-                    nonce: pool_state.nonce + BigInt(1),
+                    nonce: liquidityOffer.nonce,
                   };
 
                   // execute add_liquidity on swap canister

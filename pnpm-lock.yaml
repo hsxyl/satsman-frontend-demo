@@ -27,8 +27,8 @@ importers:
         specifier: ^0.0.157
         version: 0.0.157(@popperjs/core@2.11.8)(@types/node@22.15.30)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)(vite@6.3.5(@types/node@22.15.30)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.44.0))
       '@omnity/ree-client-ts-sdk':
-        specifier: 0.3.9
-        version: 0.3.9(@noble/hashes@1.8.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        specifier: 0.4.2
+        version: 0.4.2(@noble/hashes@1.8.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@tanstack/react-query':
         specifier: 5.80.6
         version: 5.80.6(react@19.1.0)
@@ -1019,8 +1019,8 @@ packages:
   '@omnisat/lasereyes@0.0.157':
     resolution: {integrity: sha512-pcwGLzFmLwMZVqgJPtQ6qDz6F1s1/zOJ5xYX7KzZBufkIEHrC1ScbHS9IHZV6e9xQl33+lrNQrPdjrmYlMkBWA==}
 
-  '@omnity/ree-client-ts-sdk@0.3.9':
-    resolution: {integrity: sha512-9LqvzO9h/1SlY9DhV6WLIH2iSinUcQ4yMg7rMeA51nxOxgZc+mS3QmYeWhjv2+Iq/1D4tDBbJJer+N3fp93jcA==}
+  '@omnity/ree-client-ts-sdk@0.4.2':
+    resolution: {integrity: sha512-fNBwbANAZ2QIKfdQiMdO8ru8o1V31qqW9H1iUbCFCJxDYugHCPUcw2uBzn6UyzlDpTCp1uLm/rovbtv4JW1OGA==}
     peerDependencies:
       react: '>=17'
       react-dom: '>=17'
@@ -1702,8 +1702,8 @@ packages:
   ajv@8.17.1:
     resolution: {integrity: sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==}
 
-  alkanes@https://codeload.github.com/kungfuflex/alkanes/tar.gz/66c60bf4eefbd1fcf1eafb98fdbe65b252e4ddd2:
-    resolution: {tarball: https://codeload.github.com/kungfuflex/alkanes/tar.gz/66c60bf4eefbd1fcf1eafb98fdbe65b252e4ddd2}
+  alkanes@https://codeload.github.com/kungfuflex/alkanes/tar.gz/4f945fbc65fcb9caebc76b1d724a41dd8716298f:
+    resolution: {tarball: https://codeload.github.com/kungfuflex/alkanes/tar.gz/4f945fbc65fcb9caebc76b1d724a41dd8716298f}
     version: 0.1.0
     hasBin: true
 
@@ -5511,7 +5511,7 @@ snapshots:
       '@nanostores/persistent': 0.10.2(nanostores@0.11.4)
       '@orangecrypto/orange-connect': 1.2.4(typescript@5.8.3)
       '@oyl/sdk': 1.17.0(@types/node@22.15.30)(typescript@5.8.3)
-      alkanes: https://codeload.github.com/kungfuflex/alkanes/tar.gz/66c60bf4eefbd1fcf1eafb98fdbe65b252e4ddd2(typescript@5.8.3)
+      alkanes: https://codeload.github.com/kungfuflex/alkanes/tar.gz/4f945fbc65fcb9caebc76b1d724a41dd8716298f(typescript@5.8.3)
       axios: 1.12.2
       bip32: 5.0.0-rc.0(typescript@5.8.3)
       bip39: 3.1.0
@@ -5607,7 +5607,7 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@omnity/ree-client-ts-sdk@0.3.9(@noble/hashes@1.8.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@omnity/ree-client-ts-sdk@0.4.2(@noble/hashes@1.8.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@bitcoinerlab/secp256k1': 1.2.0
       '@dfinity/agent': 3.4.0(@dfinity/candid@3.4.0(@dfinity/principal@3.4.0))(@dfinity/principal@3.4.0)(@noble/hashes@1.8.0)
@@ -5646,7 +5646,7 @@ snapshots:
       '@magiceden-oss/runestone-lib': 1.0.2
       '@sadoprotocol/ordit-sdk': 3.0.0
       '@scure/btc-signer': 1.5.0
-      alkanes: https://codeload.github.com/kungfuflex/alkanes/tar.gz/66c60bf4eefbd1fcf1eafb98fdbe65b252e4ddd2(typescript@5.8.3)
+      alkanes: https://codeload.github.com/kungfuflex/alkanes/tar.gz/4f945fbc65fcb9caebc76b1d724a41dd8716298f(typescript@5.8.3)
       bignumber.js: 9.1.2
       bip32: 4.0.0
       bip322-js: 2.0.0
@@ -6364,7 +6364,7 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  alkanes@https://codeload.github.com/kungfuflex/alkanes/tar.gz/66c60bf4eefbd1fcf1eafb98fdbe65b252e4ddd2(typescript@5.8.3):
+  alkanes@https://codeload.github.com/kungfuflex/alkanes/tar.gz/4f945fbc65fcb9caebc76b1d724a41dd8716298f(typescript@5.8.3):
     dependencies:
       '@magiceden-oss/runestone-lib': 1.0.2
       '@protobuf-ts/protoc': 2.11.1
