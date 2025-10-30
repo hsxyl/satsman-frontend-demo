@@ -47,6 +47,7 @@ import { StarFilled } from "@ant-design/icons";
 import { OutputCoin, useRee } from "@omnity/ree-client-ts-sdk";
 import { convertUnspentOutputToUtxo } from "types";
 import { BITCOIN, RICHSWAP_EXCHANGE_ID } from "../constants";
+import { create } from "lodash";
 
 export function Launch() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -393,21 +394,25 @@ function UserInfo({
         <div className="flex flex-row">
           <div className="flex flex-col">
             <p>All Satsman</p>
-            <p>Deposited: {highest_block_state?.total_deposit_btc_balances}</p>
+            <p>
+              Deposited: {highest_block_state?.total_deposit_btc_balances} S
+            </p>
             <p>Paid: {highest_block_state?.total_paid_sats} S</p>
             <p>Received: {highest_block_state?.total_minted_rune} R</p>
             <p>
               Past Price:{" "}
-              {Number(highest_block_state?.price_in_current_block ?? 0n) /
-                Number(highest_block_state?.total_minted_rune ?? 0n)}
+              {Number(highest_block_state?.total_paid_sats ?? 0n) /
+                Number(highest_block_state?.total_minted_rune ?? 0n)}{" "}
+              S/R
             </p>
             <p>
               Remain:{" "}
               {highest_block_state?.total_deposit_btc_balances! -
-                highest_block_state?.total_paid_sats!}
+                highest_block_state?.total_paid_sats!}{" "}
+              S
             </p>
-            <p>Paying: {highest_block_state?.paid_sats_in_current_block}</p>
-            <p>Curr.Price: {highest_block_state?.price_in_current_block}</p>
+            <p>Paying: {highest_block_state?.paid_sats_in_current_block} S</p>
+            <p>Curr.Price: {highest_block_state?.price_in_current_block} S/R</p>
           </div>
           {address && account && (
             <div className="ml-16 flex flex-col">
@@ -418,16 +423,13 @@ function UserInfo({
                   account_balance_in_pool_state > account.sats_balance &&
                   ` (${
                     account_balance_in_pool_state - account.sats_balance
-                  } unconfirmed)`}
+                  } unconfirmed)`}{" "}
                 S
               </p>
               <p>Paid: {account.total_paid_sats} S</p>
               <p>Received: {account.total_minted_rune_amount} R</p>
-              <p>
-                Past Price: {Number(account.total_avg_price)}
-                S/R
-              </p>
-              <p>Remain: {account.sats_balance - account.total_paid_sats}</p>
+              <p>Past Price: {Number(account.total_avg_price)} S/R</p>
+              <p>Remain: {account.sats_balance - account.total_paid_sats} S</p>
             </div>
           )}
         </div>
@@ -467,17 +469,23 @@ function UserManager({
   const status_str = pool_status_str(pool_business_state.status);
   const outcome_str = pool_outcome_str(pool_business_state.outcome);
   const { createTransaction } = useRee();
+  const {
+    data: poolStateAndKey,
+    isLoading: isLoadingPoolState,
+    isError: isErrorPoolState,
+    error: errorPoolState,
+  } = useGetPoolWithStateAndKey(pool_business_state.pool_address);
 
   useEffect(() => {
     setReferralCode(userInfoOfLaunch?.referred_by_code?.[0]);
   }, [userInfoOfLaunch]);
 
   const isLoading = useMemo(() => {
-    return isLoadingUtxo || isLoadingUserInfo;
-  }, [isLoadingUtxo, isLoadingUserInfo]);
+    return isLoadingUtxo || isLoadingUserInfo || isLoadingPoolState;
+  }, [isLoadingUtxo, isLoadingUserInfo, isLoadingPoolState]);
   const isError = useMemo(() => {
-    return isErrorUtxo || isErrorUserInfo;
-  }, [isErrorUtxo, isErrorUserInfo]);
+    return isErrorUtxo || isErrorUserInfo || isErrorPoolState;
+  }, [isErrorUtxo, isErrorUserInfo, isErrorPoolState]);
 
   if (isLoading) {
     return <Skeleton />;
@@ -487,7 +495,9 @@ function UserManager({
     return (
       <div>
         Error loading user info or utxos,{" "}
-        {errorUserInfo?.message || errorUtxo?.message}
+        {errorUserInfo?.message ||
+          errorUtxo?.message ||
+          errorPoolState?.message}
       </div>
     );
   }
@@ -504,25 +514,43 @@ function UserManager({
   console.log({ userInfoOfLaunch });
 
   const account = userInfoOfLaunch?.account?.[0];
+  const poolState = poolStateAndKey?.[0]?.[0];
+
+  const withdrawButtonHint = () => {
+    if (status_str !== "Completed") {
+      return "Launch not completed yet.";
+    }
+
+    if (outcome_str === "Success") {
+      return "Launch is successful, but need distribution income first.";
+    }
+
+    if (account?.withdrawn) {
+      return "You have already withdrawn,txid:" + account.withdraw_txid;
+    }
+
+    return null;
+  };
 
   return (
     <div>
       <h2 className="text-black text-2xl font-bold mb-4">User Manager</h2>
       <p>
-        User Balance:{" "}
+        User Deposit Balance:{" "}
         {(account?.sats_balance ?? BigInt(0)) -
-          (account?.total_paid_sats ?? BigInt(0))}
+          (account?.total_paid_sats ?? BigInt(0))}{" "}
+        S
       </p>
       <p>
         User Deposited Total Balance(Include Unconfirmed):{" "}
-        {userInfoOfLaunch?.balance_include_unconfirmed ?? 0}
+        {userInfoOfLaunch?.balance_include_unconfirmed ?? 0} S
       </p>
-      <p>User Contributed Amount: {account?.total_paid_sats ?? BigInt(0)}</p>
+      <p>User Contributed Amount: {account?.total_paid_sats ?? BigInt(0)} S</p>
       <p>
         User Received Rune:{" "}
-        {userInfoOfLaunch?.account?.[0]?.total_minted_rune_amount || 0}
+        {userInfoOfLaunch?.account?.[0]?.total_minted_rune_amount || 0} R
       </p>
-      <p>User Referral Reward: {account?.total_referral_reward ?? 0}</p>
+      <p>User Referral Reward: {account?.total_referral_reward ?? 0} S</p>
 
       {userInfoOfLaunch?.my_referral_code.length === 1 ? (
         <p className="mb-8">
@@ -553,66 +581,6 @@ function UserManager({
             }}
           >
             Generate Your Referral Code
-          </Button>
-        </div>
-      )}
-
-      {outcome_str === "Listed" && (
-        <div className="my-8">
-          <Button
-            loading={calling}
-            disabled={account?.withdrawn}
-            onClick={async () => {
-              try {
-                setCalling(true);
-                let pool_state_res =
-                  await satsmanActor.get_pool_with_state_and_key(
-                    pool_business_state.pool_address!
-                  );
-                if (pool_state_res.length === 0) {
-                  throw "No pool found for this address.";
-                }
-                let pool_state = pool_state_res[0][0]!;
-                let key = pool_state_res[0][1]!;
-
-                let account = userInfoOfLaunch?.account?.[0];
-
-                console.log("btcUtxos before withdraw", { btcUtxos });
-
-                await withdrawTx({
-                  userBtcUtxos: btcUtxos!.map((e) =>
-                    convertMaestroUtxo(e, paymentPublicKey)
-                  ),
-                  runeId: pool_business_state.rune_id,
-                  launchPoolBtcUtxo: convertUtxo(pool_state.utxo, key),
-
-                  paymentAddress: paymentAddress,
-                  address: address,
-                  launchPoolAddress: pool_business_state.pool_address!,
-                  signPsbt: signPsbt,
-                  launchPoolNonce: pool_state.nonce + BigInt(1),
-                  withdrawBtcAmount:
-                    account!.sats_balance -
-                    account!.total_paid_sats +
-                    BigInt(Math.floor(account!.total_referral_reward)),
-                  withdrawRuneAmount: BigInt(account!.total_minted_rune_amount),
-                })
-                  .then((e) => {
-                    console.log("invoke success and txid ", e);
-                    alert("Withdraw Success: " + e);
-                  })
-                  .catch((e) => {
-                    throw e;
-                  });
-              } catch (e) {
-                console.error(e);
-                alert("Withdraw failed: " + (e as Error).message);
-              } finally {
-                setCalling(false);
-              }
-            }}
-          >
-            {account?.withdrawn ? "Already Withdrawn" : "Withdraw"}
           </Button>
         </div>
       )}
@@ -780,6 +748,172 @@ function UserManager({
         </Button>
       </div>
 
+      {/* {outcome_str === "Listed" && ( */}
+      <div className="my-8">
+        <Button
+          className="mr-4"
+          loading={calling}
+          disabled={
+            account?.withdrawn ||
+            status_str !== "Completed" ||
+            outcome_str === "Success"
+          }
+          onClick={async () => {
+            try {
+              setCalling(true);
+              let pool_state_res =
+                await satsmanActor.get_pool_with_state_and_key(
+                  pool_business_state.pool_address!
+                );
+              if (pool_state_res.length === 0) {
+                throw "No pool found for this address.";
+              }
+              let pool_state = pool_state_res[0][0]!;
+              let key = pool_state_res[0][1]!;
+
+              let account = userInfoOfLaunch?.account?.[0];
+
+              console.log("btcUtxos before withdraw", { btcUtxos });
+
+              const tx = await createTransaction();
+
+              tx.addIntention({
+                exchangeId: SATSMAN_EXCHANGE_ID,
+                poolAddress: pool_business_state.pool_address!,
+                poolUtxos: [
+                  convertUnspentOutputToUtxo(convertUtxo(pool_state.utxo, key)),
+                ],
+                action: "withdraw",
+                inputCoins: [],
+                outputCoins: [
+                  {
+                    to: address,
+                    coin: {
+                      id: BITCOIN.id,
+                      value:
+                        account!.sats_balance -
+                        account!.total_paid_sats +
+                        BigInt(Math.floor(account!.total_referral_reward)),
+                    },
+                  },
+                  {
+                    to: address,
+                    coin: {
+                      id: pool_business_state.rune_id,
+                      value: BigInt(account!.total_minted_rune_amount),
+                    },
+                  },
+                ],
+                nonce: pool_state.nonce + BigInt(1),
+              });
+
+              const { psbt } = await tx.build();
+              const res = await signPsbt(psbt.toBase64());
+              const signedPsbtHex = res!.signedPsbtHex!;
+              const txid = await tx.send(signedPsbtHex);
+              alert("Distribute income Success: " + txid);
+
+              // await withdrawTx({
+              //   userBtcUtxos: btcUtxos!.map((e) =>
+              //     convertMaestroUtxo(e, paymentPublicKey)
+              //   ),
+              //   runeId: pool_business_state.rune_id,
+              //   launchPoolBtcUtxo: convertUtxo(pool_state.utxo, key),
+
+              //   paymentAddress: paymentAddress,
+              //   address: address,
+              //   launchPoolAddress: pool_business_state.pool_address!,
+              //   signPsbt: signPsbt,
+              //   launchPoolNonce: pool_state.nonce + BigInt(1),
+              //   withdrawBtcAmount:
+              //     account!.sats_balance -
+              //     account!.total_paid_sats +
+              //     BigInt(Math.floor(account!.total_referral_reward)),
+              //   withdrawRuneAmount: BigInt(account!.total_minted_rune_amount),
+              // })
+              //   .then((e) => {
+              //     console.log("invoke success and txid ", e);
+              //     alert("Withdraw Success: " + e);
+              //   })
+              //   .catch((e) => {
+              //     throw e;
+              //   });
+            } catch (e) {
+              console.error(e);
+              alert("Withdraw failed: " + (e as Error).message);
+            } finally {
+              setCalling(false);
+            }
+          }}
+        >
+          {account?.withdrawn ? "Already Withdrawn" : "Withdraw"}
+        </Button>
+        {withdrawButtonHint()}
+      </div>
+
+      <div className="my-4">
+        {poolState?.withdrawn_rune ? (
+          <p>Creator has withdrawn rune, txid: {pool_business_state.creator_withdraw_rune_txid}.</p>
+        ) : (
+          <Button
+            disabled={outcome_str !== "Failed"}
+            onClick={async () => {
+              try {
+                setCalling(true);
+                let pool_state_res =
+                  await satsmanActor.get_pool_with_state_and_key(
+                    pool_business_state.pool_address!
+                  );
+                if (pool_state_res.length === 0) {
+                  throw "No pool found for this address.";
+                }
+                let pool_state = pool_state_res[0][0]!;
+                let key = pool_state_res[0][1]!;
+                const tx = await createTransaction();
+
+                tx.addIntention({
+                  exchangeId: SATSMAN_EXCHANGE_ID,
+                  poolAddress: pool_business_state.pool_address!,
+                  poolUtxos: [
+                    convertUnspentOutputToUtxo(
+                      convertUtxo(pool_state.utxo, key)
+                    ),
+                  ],
+                  action: "withdraw_launch_rune",
+                  inputCoins: [],
+                  outputCoins: [
+                    {
+                      to: pool_business_state.creator,
+                      coin: {
+                        id: pool_business_state.rune_id,
+                        value: BigInt(pool_business_state.rune_amount_for_launch) 
+                        + BigInt(pool_business_state.rune_amount_for_lp),
+                      },
+                    },
+                  ],
+                  nonce: pool_state!.nonce + BigInt(1),
+                });
+
+                const { psbt } = await tx.build();
+                const res = await signPsbt(psbt.toBase64());
+                const signedPsbtHex = res!.signedPsbtHex!;
+                const txid = await tx.send(signedPsbtHex);
+
+                console.log("Invoke success and txid ", txid);
+                alert("Withdraw Rune Success: " + txid);
+              } catch (e) {
+                console.error(e);
+                alert("Creator Withdraw Rune Failed: " + (e as Error).message);
+              } finally {
+                setCalling(false);
+              }
+            }}
+          >
+            Creator Withdraw Rune When Failed
+          </Button>
+        )}
+      </div>
+
       {/* <LaunchSuccess pool_business_state={pool_business_state} /> */}
       {status_str === "Completed" && (
         <LaunchComplete pool_business_state={pool_business_state} />
@@ -925,7 +1059,7 @@ function LaunchSuccess({
                   const tx = await createTransaction();
 
                   // execute add_lp on satsman canister
-                  tx.addIntention({
+                  let intentiont1 = {
                     exchangeId: SATSMAN_EXCHANGE_ID,
                     poolAddress: pool_business_state.pool_address!,
                     poolUtxos: [
@@ -944,25 +1078,23 @@ function LaunchSuccess({
                         },
                       },
 
-                      ...pool_business_state.launch_plan.income_distribution.map(
-                        (e): OutputCoin => ({
-                          to: e.address,
-                          coin: {
-                            id: BITCOIN.id,
-                            value: BigInt(
-                              (pool_business_state.btc_amount_for_lp *
-                                BigInt(e.percentage)) /
-                                100n
-                            ),
-                          },
-                        })
+                      ...pool_business_state.income_distribution_list.map(
+                        (e) => {
+                          return {
+                            to: e[0],
+                            coin: {
+                              id: BITCOIN.id,
+                              value: e[1],
+                            },
+                          };
+                        }
                       ),
                     ],
                     nonce: pool_state.nonce + BigInt(1),
-                  });
+                  };
+                  tx.addIntention(intentiont1);
 
-                  // execute add_liquidity on swap canister
-                  tx.addIntention({
+                  let intention2 = {
                     exchangeId: RICHSWAP_EXCHANGE_ID,
                     poolAddress: launchSwapPool!.address,
                     poolUtxos: [],
@@ -985,11 +1117,21 @@ function LaunchSuccess({
                     ],
                     outputCoins: [],
                     nonce: pool_state.nonce + BigInt(1),
-                  });
+                  };
+
+                  // execute add_liquidity on swap canister
+                  tx.addIntention(intention2);
 
                   const { psbt } = await tx.build();
+
                   const res = await signPsbt(psbt.toBase64());
                   const signedPsbtHex = res!.signedPsbtHex!;
+                  console.log({
+                    intentiont1,
+                    intention2,
+                    psbt,
+                    signedPsbtHex,
+                  });
                   const txid = await tx.send(signedPsbtHex);
 
                   alert("Distribute income Success: " + txid);
@@ -1012,8 +1154,8 @@ function LaunchSuccess({
                   //   swapPoolNonce: liquidityOffer.nonce,
                   // });
                 } catch (e) {
-                  console.log("Add Lp Error", e);
-                  alert("Add Lp failed: " + (e as Error).message);
+                  console.log("Distribute income Error", e);
+                  alert("Distribute income failed: " + (e as Error).message);
                 } finally {
                   setCalling(false);
                 }
@@ -1024,11 +1166,21 @@ function LaunchSuccess({
           </div>
         );
       case "Listed":
-        return <p className="text-green-500">Liquidity Added</p>;
+        return (
+          <p className="text-green-500">
+            Finished Distribute Income, txid:{" "}
+            {pool_business_state.distribute_income_txid!}
+          </p>
+        );
       default:
         return <div>Unexpected Outcome: {outcome_str}</div>;
     }
   };
+
+  const income_distribution_total_percentage =
+    pool_business_state.launch_plan.income_distribution
+      .map((e) => e.percentage)
+      .reduce((a, b) => a + b, 0);
 
   return (
     <div>
@@ -1037,7 +1189,7 @@ function LaunchSuccess({
       <div>
         {launchSwapPool ? (
           <div>
-            <p>Pool Address: {launchSwapPool.address}</p>
+            <p>Rich Swap Pool Address: {launchSwapPool.address}</p>
           </div>
         ) : (
           <Button
@@ -1062,15 +1214,11 @@ function LaunchSuccess({
       {launchSwapPool && (
         <div>
           <h2 className="text-xl font-semibold mb-2">Distribute Income</h2>
-          <p>
-            Total Raised Amount: {last_block_state?.total_auction_raised_amount}
-          </p>
+          <p>Total Raised Amount: {last_block_state?.total_paid_sats}</p>
           <p>
             Referral Reward Amount: {last_block_state?.total_referral_reward}
           </p>
-          <p>
-            Total Exchange Fee: {last_block_state?.total_exchange_fee}
-          </p>
+          <p>Total Exchange Fee: {last_block_state?.total_exchange_fee}</p>
           <p className="my-1">
             Btc Amount for Lp: {pool_business_state.btc_amount_for_lp}
           </p>
@@ -1078,10 +1226,12 @@ function LaunchSuccess({
             Rune Amount for Lp: {pool_business_state.rune_amount_for_lp}
           </p>
           <p>
-            {pool_business_state.launch_plan.income_distribution
-              .map((e) => e.percentage)
-              .reduce((a, b) => a + b, 0)}
-            % will be received by{" "}
+            {income_distribution_total_percentage}
+            %(
+            {((last_block_state?.total_paid_sats ?? 0n) *
+              BigInt(income_distribution_total_percentage)) /
+              BigInt(100)}
+            ) income will be received by{" "}
             {pool_business_state.launch_plan.income_distribution.length}{" "}
             addresses
           </p>
@@ -1089,8 +1239,14 @@ function LaunchSuccess({
             (item, index) => (
               <p key={index}>
                 {" "}
-                - {item.percentage}% ({(Number(last_block_state?.total_auction_raised_amount ??0) * item.percentage / 100).toFixed()}) will be received by{" "}
-                {shortenAddress(item.address)} ({item.label})
+                - {item.percentage}% (
+                {(
+                  (Number(last_block_state?.total_paid_sats ?? 0) *
+                    item.percentage) /
+                  100
+                ).toFixed()}
+                ) will be received by {shortenAddress(item.address)} (
+                {item.label})
               </p>
             )
           )}
