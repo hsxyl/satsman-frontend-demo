@@ -11,7 +11,7 @@ export function AllLaunch() {
     page_size: 100,
     sort_by: [
       {
-        UserCount: null,
+        TVL: null,
       },
     ],
     sort_order: [],

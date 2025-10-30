@@ -230,7 +230,7 @@ export function CreateLaunch() {
       console.log({ action_params: JSON.stringify(action_params) });
       //   return
 
-      let new_pool_address = await satsmanActor.new_pool(paymentAddress);
+      let new_pool_address = await satsmanActor.new_pool(runeName);
       let total_rune_amount =
         BigInt(tokenForAuction!) + BigInt(tokenForLp!);
       console.log({ new_pool_address, rune_id, total_rune_amount });

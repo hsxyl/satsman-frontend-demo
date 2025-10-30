@@ -99,6 +99,7 @@ export interface ExchangeState {
   'uuid' : bigint,
   'user_referral_codes' : Array<[string, string]>,
   'is_task_running' : boolean,
+  'rune_launch_seq' : Array<[string, number]>,
   'code_of_users' : Array<[string, string]>,
   'sync_block_height' : number,
 }

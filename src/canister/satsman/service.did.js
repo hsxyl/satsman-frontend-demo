@@ -91,6 +91,7 @@ export const idlFactory = ({ IDL }) => {
     'uuid' : IDL.Nat64,
     'user_referral_codes' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'is_task_running' : IDL.Bool,
+    'rune_launch_seq' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat32)),
     'code_of_users' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'sync_block_height' : IDL.Nat32,
   });
