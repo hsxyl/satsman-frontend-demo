@@ -133,6 +133,7 @@ export function CreateLaunch() {
     error: latestBlockHeightError,
   } = useLatestBlockHeight();
 
+
   const [isFinishedMint, supply] = useMemo(() => {
     if (!runeInfo || !latestBlockHeight || !config) {
       return [undefined, undefined];
@@ -165,8 +166,8 @@ export function CreateLaunch() {
     setTokenForLp(((BigInt(tokenForAuction) * BigInt(lpPercentage)) / BigInt(100)).toString());
   }, [lpPercentage, tokenForAuction, isFairLaunch]);
 
-  const { signPsbt } = useLaserEyes();
-  const { createTransaction, address, paymentAddress } = useRee();
+  const { signPsbt, address, paymentAddress } = useLaserEyes();
+  const { client } = useRee();
 
   const loading = isConfigLoading || isLoadingLatestBlockHeight;
   const error = configError || latestBlockHeightError;
@@ -193,7 +194,12 @@ export function CreateLaunch() {
 
       let rune = await indexerActor.get_rune(runeName!);
       let rune_id = rune[0]!.rune_id;
-      const tx = await createTransaction();
+      const tx = await client.createTransaction({
+        address: address,
+        paymentAddress: paymentAddress,
+        mergeSelfRuneBtcOutputs: true
+      });
+      // const tx = await createTransaction();
       //   let poolUtxo = convertUtxo(
       //     create_launch_state.utxo,
       //     create_launch_state.key

@@ -793,7 +793,7 @@ function UserManager({
           disabled={
             account?.withdrawn ||
             status_str !== "Completed" ||
-            outcome_str === "Success"
+            outcome_str !== "Listed"
           }
           onClick={async () => {
             try {
@@ -848,7 +848,7 @@ function UserManager({
               const res = await signPsbt(psbt.toBase64());
               const signedPsbtHex = res!.signedPsbtHex!;
               const txid = await tx.send(signedPsbtHex);
-              alert("Distribute income Success: " + txid);
+              alert("Withdraw Success: " + txid);
 
               // await withdrawTx({
               //   userBtcUtxos: btcUtxos!.map((e) =>
@@ -897,6 +897,56 @@ function UserManager({
             status_str !== "Completed" ||
             outcome_str !== "Failed"
           }
+          onClick={async () => {
+            try {
+              setCalling(true);
+              let pool_state_res =
+                await satsmanActor.get_pool_with_state_and_key(
+                  pool_business_state.pool_address!
+                );
+
+              if (pool_state_res.length === 0) {
+                throw "No pool found for this address.";
+              }
+              let pool_state = pool_state_res[0][0]!;
+              let key = pool_state_res[0][1]!;
+
+              let account = userInfoOfLaunch?.account?.[0];
+
+              const tx = await createTransaction();
+
+              tx.addIntention({
+                exchangeId: SATSMAN_EXCHANGE_ID,
+                poolAddress: pool_business_state.pool_address!,
+                poolUtxos: [
+                  convertUnspentOutputToUtxo(convertUtxo(pool_state.utxo, key)),
+                ],
+                action: "withdraw",
+                inputCoins: [],
+                outputCoins: [
+                  {
+                    to: address,
+                    coin: {
+                      id: BITCOIN.id,
+                      value: account!.sats_balance,
+                    },
+                  },
+                ],
+                nonce: pool_state.nonce + BigInt(1),
+              });
+
+              const { psbt } = await tx.build();
+              const res = await signPsbt(psbt.toBase64());
+              const signedPsbtHex = res!.signedPsbtHex!;
+              const txid = await tx.send(signedPsbtHex);
+              alert("Withdraw Success: " + txid);
+            } catch (e) {
+              console.error(e);
+              alert("Withdraw failed: " + (e as Error).message);
+            } finally {
+              setCalling(false);
+            }
+          }}
         >
           {account?.withdrawn ? "Already Withdrawn" : "Withdraw When Failed"}
         </Button>
@@ -1042,7 +1092,7 @@ function LaunchSuccess({
 
   const status_str = pool_status_str(pool_business_state.status);
   const outcome_str = pool_outcome_str(pool_business_state.outcome);
-  const { createTransaction } = useRee();
+  const { createTransaction, client } = useRee();
   const last_block_state = pool_business_state.highest_block_states[0];
 
   useEffect(() => {
@@ -1112,7 +1162,17 @@ function LaunchSuccess({
 
                   console.log("btc Utxos", { btcUtxos });
 
-                  const tx = await createTransaction();
+                  let tx = await client.createTransaction({
+                    address: address,
+                    paymentAddress: paymentAddress,
+                    mergeSelfRuneBtcOutputs: true,
+                  });
+
+                  // const tx = await createTransaction(
+                  //   {
+
+                  //   }
+                  // );
 
                   // execute add_lp on satsman canister
                   let intentiont1: Intention = {

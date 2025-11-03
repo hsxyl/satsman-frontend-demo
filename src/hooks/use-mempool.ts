@@ -7,6 +7,6 @@ export function useLatestBlockHeight() {
     queryFn: async () => {
         return await getBtcLatestHeight()
     },
-    refetchInterval: 10 * 1000, // Refetch every 60 seconds
+    refetchInterval: 30 * 1000, // Refetch every 60 seconds
   });
 }
