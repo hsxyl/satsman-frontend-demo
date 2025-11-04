@@ -39,15 +39,11 @@ import { useLoginUserBtcUtxo, useWalletBtcUtxos } from "hooks/use-utxos";
 import { useSiwbIdentity } from "oct-ic-siwb-lasereyes-connector";
 import { use, useEffect, useMemo, useState } from "react";
 import { convertUtxo, shortenAddress } from "utils";
-import { addLiquidityTx } from "utils/tx-helper/addLp";
-import { topupTx } from "utils/tx-helper/topup";
-import { withdrawTx } from "utils/tx-helper/withdraw";
 import { Line } from "@ant-design/charts";
 import { StarFilled } from "@ant-design/icons";
 import { Intention, OutputCoin, useRee } from "@omnity/ree-client-ts-sdk";
 import { convertUnspentOutputToUtxo } from "types";
 import { BITCOIN, RICHSWAP_EXCHANGE_ID } from "../constants";
-import { create } from "lodash";
 
 export function Launch() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -468,7 +464,7 @@ function UserManager({
   const [tune, setTune] = useState<number | undefined>(userInfoOfLaunch?.tune);
   const status_str = pool_status_str(pool_business_state.status);
   const outcome_str = pool_outcome_str(pool_business_state.outcome);
-  const { createTransaction } = useRee();
+  const { createTransaction, client } = useRee();
   const {
     data: poolStateAndKey,
     isLoading: isLoadingPoolState,
@@ -770,7 +766,7 @@ function UserManager({
                 alert("Please connect your wallet first.");
                 return;
               }
-              satsmanActor.tune(
+              await satsmanActorWithIdentity(identity).tune(
                 pool_business_state.pool_address,
                 address!,
                 tune ?? 100
@@ -954,70 +950,89 @@ function UserManager({
       </div>
 
       <div className="my-4">
-        {poolState?.withdrawn_rune ? (
+        {/* {poolState?.withdrawn_rune ? (
           <p>
             Creator has withdrawn rune, txid:{" "}
             {pool_business_state.creator_withdraw_rune_txid}.
           </p>
-        ) : (
-          <Button
-            disabled={outcome_str !== "Failed"}
-            onClick={async () => {
-              try {
-                setCalling(true);
-                let pool_state_res =
-                  await satsmanActor.get_pool_with_state_and_key(
-                    pool_business_state.pool_address!
-                  );
-                if (pool_state_res.length === 0) {
-                  throw "No pool found for this address.";
-                }
-                let pool_state = pool_state_res[0][0]!;
-                let key = pool_state_res[0][1]!;
-                const tx = await createTransaction();
-
-                tx.addIntention({
-                  exchangeId: SATSMAN_EXCHANGE_ID,
-                  poolAddress: pool_business_state.pool_address!,
-                  poolUtxos: [
-                    convertUnspentOutputToUtxo(
-                      convertUtxo(pool_state.utxo, key)
-                    ),
-                  ],
-                  action: "withdraw_launch_rune",
-                  inputCoins: [],
-                  outputCoins: [
-                    {
-                      to: pool_business_state.creator,
-                      coin: {
-                        id: pool_business_state.rune_id,
-                        value:
-                          BigInt(pool_business_state.rune_amount_for_launch) +
-                          BigInt(pool_business_state.rune_amount_for_lp),
-                      },
-                    },
-                  ],
-                  nonce: pool_state!.nonce + BigInt(1),
-                });
-
-                const { psbt } = await tx.build();
-                const res = await signPsbt(psbt.toBase64());
-                const signedPsbtHex = res!.signedPsbtHex!;
-                const txid = await tx.send(signedPsbtHex);
-
-                console.log("Invoke success and txid ", txid);
-                alert("Withdraw Rune Success: " + txid);
-              } catch (e) {
-                console.error(e);
-                alert("Creator Withdraw Rune Failed: " + (e as Error).message);
-              } finally {
-                setCalling(false);
+        ) : ( */}
+        <Button
+          loading={calling}
+          disabled={outcome_str !== "Failed" || poolState?.withdrawn_rune}
+          onClick={async () => {
+            try {
+              setCalling(true);
+              let pool_state_res =
+                await satsmanActor.get_pool_with_state_and_key(
+                  pool_business_state.pool_address!
+                );
+              if (pool_state_res.length === 0) {
+                throw "No pool found for this address.";
               }
-            }}
-          >
-            Creator Withdraw Rune When Failed
-          </Button>
+              let pool_state = pool_state_res[0][0]!;
+              let key = pool_state_res[0][1]!;
+              // const tx = await createTransaction();
+              let tx = await client.createTransaction({
+                address: address,
+                paymentAddress: paymentAddress,
+                mergeSelfRuneBtcOutputs: true,
+              });
+
+              let intention = {
+                exchangeId: SATSMAN_EXCHANGE_ID,
+                poolAddress: pool_business_state.pool_address!,
+                poolUtxos: [
+                  convertUnspentOutputToUtxo(convertUtxo(pool_state.utxo, key)),
+                ],
+                action: "withdraw_launch_rune",
+                inputCoins: [],
+                outputCoins: [
+                  {
+                    to: pool_business_state.creator,
+                    coin: {
+                      id: pool_business_state.rune_id,
+                      value:
+                        BigInt(pool_business_state.rune_amount_for_launch) +
+                        BigInt(pool_business_state.rune_amount_for_lp),
+                    },
+                  },
+                ],
+                nonce: pool_state!.nonce + BigInt(1),
+              };
+
+              tx.addIntention(intention);
+
+              const { psbt } = await tx.build();
+              const res = await signPsbt(psbt.toBase64());
+              const signedPsbtHex = res!.signedPsbtHex!;
+
+              console.log({
+                intention,
+                psbt: psbt.toBase64(),
+                signedPsbtHex,
+              });
+
+              const txid = await tx.send(signedPsbtHex);
+
+              console.log("Invoke success and txid ", txid);
+              alert("Withdraw Rune Success: " + txid);
+            } catch (e) {
+              console.error(e);
+              alert("Creator Withdraw Rune Failed: " + (e as Error).message);
+            } finally {
+              setCalling(false);
+            }
+          }}
+        >
+          Creator Withdraw Rune When Failed
+        </Button>
+        {poolState?.withdrawn_rune && (
+          <p>
+            Creator has withdrawn rune, txid:{" "}
+            {pool_business_state.creator_withdraw_rune_txid}.
+          </p>
         )}
+        {/* )} */}
       </div>
 
       {/* <LaunchSuccess pool_business_state={pool_business_state} /> */}
@@ -1165,7 +1180,7 @@ function LaunchSuccess({
                   let tx = await client.createTransaction({
                     address: address,
                     paymentAddress: paymentAddress,
-                    mergeSelfRuneBtcOutputs: true,
+                    // mergeSelfRuneBtcOutputs: true,
                   });
 
                   // const tx = await createTransaction(

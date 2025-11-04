@@ -1,285 +1,285 @@
-import { Transaction } from "../transaction";
-import { addressTypeToString, getAddressType } from "../address";
-import {
-  estimate_min_tx_fee,
-  ocActor,
-} from "../../canister/orchestrator/actor";
-import {
-  BITCOIN,
-  RICHSWAP_EXCHANGE_ID,
-  UTXO_DUST,
-} from "../../constants";
-import * as bitcoin from "bitcoinjs-lib";
-// import { Edict, RuneId, Runestone, none } from "../../utils/runelib";
-import {
-  InvokeArgs,
-  OrchestratorStatus,
-  TxOutputType,
-} from "../../canister/orchestrator/service.did";
-import { Edict, RuneId, Runestone, none } from "runelib";
-import { AddressType, ToSignInput, UnspentOutput } from "types";
-import { SATSMAN_EXCHANGE_ID } from "canister/satsman/actor";
+// import { Transaction } from "../transaction";
+// import { addressTypeToString, getAddressType } from "../address";
+// import {
+//   estimate_min_tx_fee,
+//   ocActor,
+// } from "../../canister/orchestrator/actor";
+// import {
+//   BITCOIN,
+//   RICHSWAP_EXCHANGE_ID,
+//   UTXO_DUST,
+// } from "../../constants";
+// import * as bitcoin from "bitcoinjs-lib";
+// // import { Edict, RuneId, Runestone, none } from "../../utils/runelib";
+// import {
+//   InvokeArgs,
+//   OrchestratorStatus,
+//   TxOutputType,
+// } from "../../canister/orchestrator/service.did";
+// import { Edict, RuneId, Runestone, none } from "runelib";
+// import { AddressType, ToSignInput, UnspentOutput } from "types";
+// import { SATSMAN_EXCHANGE_ID } from "canister/satsman/actor";
 
-export async function addLiquidityTx({
-  userBtcUtxos,
-  btcAmountForAddLiquidity,
-  runeid,
-  runeAmountForAddLiquidity,
-  launchPoolUtxo,
-  paymentAddress,
-  swapPoolAddress,
-  launchPoolAddress,
-  signPsbt,
-  launchPoolNonce,
-  swapPoolNonce,
-}: {
-  userBtcUtxos: UnspentOutput[];
-  btcAmountForAddLiquidity: bigint;
-  runeid: string;
-  runeAmountForAddLiquidity: bigint;
-  launchPoolUtxo: UnspentOutput;
-  paymentAddress: string;
-  swapPoolAddress: string;
-  // swapPoolUtxo: UnspentOutput;
-  launchPoolAddress: string;
-  signPsbt: any;
-  launchPoolNonce: bigint;
-  swapPoolNonce: bigint;
-}) {
-  let feeRate = await ocActor
-    .get_status()
-    .then((res: OrchestratorStatus) => {
-      return res.mempool_tx_fee_rate.medium;
-    })
-    .catch((err) => {
-      console.log("get recommendedFeeRate error", err);
-      throw err;
-    });
-  const tx = new Transaction();
+// export async function addLiquidityTx({
+//   userBtcUtxos,
+//   btcAmountForAddLiquidity,
+//   runeid,
+//   runeAmountForAddLiquidity,
+//   launchPoolUtxo,
+//   paymentAddress,
+//   swapPoolAddress,
+//   launchPoolAddress,
+//   signPsbt,
+//   launchPoolNonce,
+//   swapPoolNonce,
+// }: {
+//   userBtcUtxos: UnspentOutput[];
+//   btcAmountForAddLiquidity: bigint;
+//   runeid: string;
+//   runeAmountForAddLiquidity: bigint;
+//   launchPoolUtxo: UnspentOutput;
+//   paymentAddress: string;
+//   swapPoolAddress: string;
+//   // swapPoolUtxo: UnspentOutput;
+//   launchPoolAddress: string;
+//   signPsbt: any;
+//   launchPoolNonce: bigint;
+//   swapPoolNonce: bigint;
+// }) {
+//   let feeRate = await ocActor
+//     .get_status()
+//     .then((res: OrchestratorStatus) => {
+//       return res.mempool_tx_fee_rate.medium;
+//     })
+//     .catch((err) => {
+//       console.log("get recommendedFeeRate error", err);
+//       throw err;
+//     });
+//   const tx = new Transaction();
 
-  tx.setFeeRate(Number(feeRate.toString()));
-  tx.setEnableRBF(false);
-  tx.setChangeAddress(paymentAddress);
+//   tx.setFeeRate(Number(feeRate.toString()));
+//   tx.setEnableRBF(false);
+//   tx.setChangeAddress(paymentAddress);
 
-  //   let userBtcAmount = userBtcUtxos.reduce(
-  //     (acc, utxo) => acc + BigInt(utxo.satoshis),
-  //     BigInt(0)
-  //   );
-  //   console.log({ userBtcAmount });
+//   //   let userBtcAmount = userBtcUtxos.reduce(
+//   //     (acc, utxo) => acc + BigInt(utxo.satoshis),
+//   //     BigInt(0)
+//   //   );
+//   //   console.log({ userBtcAmount });
 
-  let inputTypes: TxOutputType[] = [];
-  let outputTypes: TxOutputType[] = [];
+//   let inputTypes: TxOutputType[] = [];
+//   let outputTypes: TxOutputType[] = [];
 
-  // input 0 pool btc utxo
-  tx.addInput(launchPoolUtxo);
-  inputTypes.push(addressTypeToString(getAddressType(launchPoolUtxo.address)));
+//   // input 0 pool btc utxo
+//   tx.addInput(launchPoolUtxo);
+//   inputTypes.push(addressTypeToString(getAddressType(launchPoolUtxo.address)));
 
-  // input 1-n user utxo
+//   // input 1-n user utxo
 
-  // output 0
-  tx.addOutput(
-    launchPoolAddress,
-    BigInt(launchPoolUtxo.satoshis) - btcAmountForAddLiquidity
-  );
-  outputTypes.push(addressTypeToString(getAddressType(launchPoolAddress)));
+//   // output 0
+//   tx.addOutput(
+//     launchPoolAddress,
+//     BigInt(launchPoolUtxo.satoshis) - btcAmountForAddLiquidity
+//   );
+//   outputTypes.push(addressTypeToString(getAddressType(launchPoolAddress)));
 
-  // swap pool
-  // output 1
-  tx.addOutput(swapPoolAddress, btcAmountForAddLiquidity);
-  outputTypes.push(addressTypeToString(getAddressType(swapPoolAddress)));
+//   // swap pool
+//   // output 1
+//   tx.addOutput(swapPoolAddress, btcAmountForAddLiquidity);
+//   outputTypes.push(addressTypeToString(getAddressType(swapPoolAddress)));
 
-  // edict & op return
-  const [runeBlock, runeIdx] = runeid.split(":");
+//   // edict & op return
+//   const [runeBlock, runeIdx] = runeid.split(":");
 
-  console.log("LaunchPool Utxo", {launchPoolUtxo})
-  const { id: launchRuneId, amount: launchPoolRuneAmount } =
-    launchPoolUtxo.runes.find((rune) => rune.id === runeid)!;
-  const edicts = [
-    new Edict(
-      new RuneId(Number(runeBlock), Number(runeIdx)),
-      BigInt(launchPoolRuneAmount) - runeAmountForAddLiquidity,
-      0
-    ),
-    new Edict(
-      new RuneId(Number(runeBlock), Number(runeIdx)),
-      BigInt(runeAmountForAddLiquidity),
-      1
-    ),
-  ];
+//   console.log("LaunchPool Utxo", {launchPoolUtxo})
+//   const { id: launchRuneId, amount: launchPoolRuneAmount } =
+//     launchPoolUtxo.runes.find((rune) => rune.id === runeid)!;
+//   const edicts = [
+//     new Edict(
+//       new RuneId(Number(runeBlock), Number(runeIdx)),
+//       BigInt(launchPoolRuneAmount) - runeAmountForAddLiquidity,
+//       0
+//     ),
+//     new Edict(
+//       new RuneId(Number(runeBlock), Number(runeIdx)),
+//       BigInt(runeAmountForAddLiquidity),
+//       1
+//     ),
+//   ];
 
-  const runestone = new Runestone(edicts, none(), none(), none());
-  console.log({ runestone });
+//   const runestone = new Runestone(edicts, none(), none(), none());
+//   console.log({ runestone });
 
-  const opReturnScript = runestone.encipher();
+//   const opReturnScript = runestone.encipher();
 
-  // OP_RETURN
-  tx.addScriptOutput(opReturnScript, BigInt(0));
+//   // OP_RETURN
+//   tx.addScriptOutput(opReturnScript, BigInt(0));
 
-  // user
-  // add change utxo
-  outputTypes.push(addressTypeToString(getAddressType(paymentAddress)));
+//   // user
+//   // add change utxo
+//   outputTypes.push(addressTypeToString(getAddressType(paymentAddress)));
 
-  // user input as tx fee
-  let userBtcAmount = BigInt(0);
-  let fee = BigInt(0);
-  for (let i = 0; i < userBtcUtxos.length && i < 10; i++) {
-    const utxo = userBtcUtxos[i]!;
-    tx.addInput(utxo);
-    inputTypes.push(addressTypeToString(getAddressType(utxo.address)));
-    userBtcAmount += BigInt(utxo.satoshis);
-    fee = await estimate_min_tx_fee(
-      inputTypes,
-      [launchPoolAddress],
-      outputTypes
-    );
-    fee = fee + fee;
-    if (userBtcAmount >= fee) break;
-  }
-  if (userBtcAmount < fee) {
-    throw new Error("Insufficient UTXO(s)");
-  }
+//   // user input as tx fee
+//   let userBtcAmount = BigInt(0);
+//   let fee = BigInt(0);
+//   for (let i = 0; i < userBtcUtxos.length && i < 10; i++) {
+//     const utxo = userBtcUtxos[i]!;
+//     tx.addInput(utxo);
+//     inputTypes.push(addressTypeToString(getAddressType(utxo.address)));
+//     userBtcAmount += BigInt(utxo.satoshis);
+//     fee = await estimate_min_tx_fee(
+//       inputTypes,
+//       [launchPoolAddress],
+//       outputTypes
+//     );
+//     fee = fee + fee;
+//     if (userBtcAmount >= fee) break;
+//   }
+//   if (userBtcAmount < fee) {
+//     throw new Error("Insufficient UTXO(s)");
+//   }
 
-  let change_amount = BigInt(userBtcAmount) - fee;
+//   let change_amount = BigInt(userBtcAmount) - fee;
 
-  if (change_amount < 0) {
-    throw new Error("Inssuficient UTXO(s)");
-  } else if (change_amount <= UTXO_DUST) {
-    outputTypes.pop();
-  } else {
-    tx.addOutput(paymentAddress, change_amount);
-  }
+//   if (change_amount < 0) {
+//     throw new Error("Inssuficient UTXO(s)");
+//   } else if (change_amount <= UTXO_DUST) {
+//     outputTypes.pop();
+//   } else {
+//     tx.addOutput(paymentAddress, change_amount);
+//   }
 
-  console.log({ tx });
-  const inputs = tx.getInputs();
-  const psbt = tx.toPsbt();
-  //@ts-expect-error: todo
-  const unsignedTx = psbt.__CACHE.__TX;
-  const toSignInputs: ToSignInput[] = [];
-  const toSpendUtxos = inputs
-    .filter(({ utxo }, index) => {
-      const isUserInput =
-        utxo.address === paymentAddress || utxo.address === paymentAddress;
-      const addressType = getAddressType(utxo.address);
-      if (isUserInput) {
-        toSignInputs.push({
-          index,
-          ...(addressType === AddressType.P2TR
-            ? { address: utxo.address, disableTweakSigner: false }
-            : { publicKey: utxo.pubkey, disableTweakSigner: true }),
-        });
-      }
-      return isUserInput;
-    })
-    .map((input) => input.utxo);
-  const unsignedTxClone = unsignedTx.clone();
+//   console.log({ tx });
+//   const inputs = tx.getInputs();
+//   const psbt = tx.toPsbt();
+//   //@ts-expect-error: todo
+//   const unsignedTx = psbt.__CACHE.__TX;
+//   const toSignInputs: ToSignInput[] = [];
+//   const toSpendUtxos = inputs
+//     .filter(({ utxo }, index) => {
+//       const isUserInput =
+//         utxo.address === paymentAddress || utxo.address === paymentAddress;
+//       const addressType = getAddressType(utxo.address);
+//       if (isUserInput) {
+//         toSignInputs.push({
+//           index,
+//           ...(addressType === AddressType.P2TR
+//             ? { address: utxo.address, disableTweakSigner: false }
+//             : { publicKey: utxo.pubkey, disableTweakSigner: true }),
+//         });
+//       }
+//       return isUserInput;
+//     })
+//     .map((input) => input.utxo);
+//   const unsignedTxClone = unsignedTx.clone();
 
-  for (let i = 0; i < toSignInputs.length; i++) {
-    const toSignInput = toSignInputs[i]!;
+//   for (let i = 0; i < toSignInputs.length; i++) {
+//     const toSignInput = toSignInputs[i]!;
 
-    const toSignIndex = toSignInput!.index;
-    const input = inputs[toSignIndex]!;
-    const inputAddress = input.utxo.address;
-    if (!inputAddress) continue;
-    const redeemScript = psbt.data.inputs[toSignIndex]!.redeemScript;
-    const addressType = getAddressType(inputAddress);
+//     const toSignIndex = toSignInput!.index;
+//     const input = inputs[toSignIndex]!;
+//     const inputAddress = input.utxo.address;
+//     if (!inputAddress) continue;
+//     const redeemScript = psbt.data.inputs[toSignIndex]!.redeemScript;
+//     const addressType = getAddressType(inputAddress);
 
-    if (redeemScript && addressType === AddressType.P2SH_P2WPKH) {
-      const finalScriptSig = bitcoin.script.compile([redeemScript!]);
-      unsignedTxClone.setInputScript(toSignIndex, finalScriptSig);
-    }
-  }
+//     if (redeemScript && addressType === AddressType.P2SH_P2WPKH) {
+//       const finalScriptSig = bitcoin.script.compile([redeemScript!]);
+//       unsignedTxClone.setInputScript(toSignIndex, finalScriptSig);
+//     }
+//   }
 
-  const txid = unsignedTxClone.getId();
-  console.log({ psbt });
-  const psbtBase64 = psbt.toBase64();
-  const res = await signPsbt(psbtBase64);
-  let signedPsbtHex = res?.signedPsbtHex;
+//   const txid = unsignedTxClone.getId();
+//   console.log({ psbt });
+//   const psbtBase64 = psbt.toBase64();
+//   const res = await signPsbt(psbtBase64);
+//   let signedPsbtHex = res?.signedPsbtHex;
 
-  let invoke_arg: InvokeArgs = {
-    initiator_utxo_proof: [],
-    intention_set: {
-      tx_fee_in_sats: BigInt(fee),
-      initiator_address: paymentAddress,
-      intentions: [
-        {
-          action: "add_lp",
-          exchange_id: SATSMAN_EXCHANGE_ID,
-          input_coins: [],
-          pool_utxo_spent: [],
-          pool_utxo_received: [],
-          output_coins: [
-            {
-              to: swapPoolAddress,
-              coin: {
-                id: runeid,
-                value: BigInt(runeAmountForAddLiquidity),
-              },
-            },
-            {
-              to: swapPoolAddress,
-              coin: {
-                id: BITCOIN.id,
-                value: BigInt(btcAmountForAddLiquidity),
-              },
-            },
-          ],
-          pool_address: launchPoolAddress,
-          action_params: "",
-          nonce: launchPoolNonce,
-        },
-        {
-          action: "add_liquidity",
-          exchange_id: RICHSWAP_EXCHANGE_ID,
-          input_coins: [
-            {
-              from: launchPoolAddress,
-              coin: {
-                id: BITCOIN.id,
-                value: btcAmountForAddLiquidity,
-              },
-            },
-            {
-              from: launchPoolAddress,
-              coin: {
-                id: runeid,
-                value: runeAmountForAddLiquidity,
-              },
-            },
-          ],
-          pool_utxo_spent: [],
-          pool_utxo_received: [],
-          output_coins: [],
-          pool_address: swapPoolAddress,
-          action_params: "",
-          nonce: swapPoolNonce,
-        },
-      ],
-    },
-    psbt_hex: signedPsbtHex,
-  };
+//   let invoke_arg: InvokeArgs = {
+//     initiator_utxo_proof: [],
+//     intention_set: {
+//       tx_fee_in_sats: BigInt(fee),
+//       initiator_address: paymentAddress,
+//       intentions: [
+//         {
+//           action: "add_lp",
+//           exchange_id: SATSMAN_EXCHANGE_ID,
+//           input_coins: [],
+//           pool_utxo_spent: [],
+//           pool_utxo_received: [],
+//           output_coins: [
+//             {
+//               to: swapPoolAddress,
+//               coin: {
+//                 id: runeid,
+//                 value: BigInt(runeAmountForAddLiquidity),
+//               },
+//             },
+//             {
+//               to: swapPoolAddress,
+//               coin: {
+//                 id: BITCOIN.id,
+//                 value: BigInt(btcAmountForAddLiquidity),
+//               },
+//             },
+//           ],
+//           pool_address: launchPoolAddress,
+//           action_params: "",
+//           nonce: launchPoolNonce,
+//         },
+//         {
+//           action: "add_liquidity",
+//           exchange_id: RICHSWAP_EXCHANGE_ID,
+//           input_coins: [
+//             {
+//               from: launchPoolAddress,
+//               coin: {
+//                 id: BITCOIN.id,
+//                 value: btcAmountForAddLiquidity,
+//               },
+//             },
+//             {
+//               from: launchPoolAddress,
+//               coin: {
+//                 id: runeid,
+//                 value: runeAmountForAddLiquidity,
+//               },
+//             },
+//           ],
+//           pool_utxo_spent: [],
+//           pool_utxo_received: [],
+//           output_coins: [],
+//           pool_address: swapPoolAddress,
+//           action_params: "",
+//           nonce: swapPoolNonce,
+//         },
+//       ],
+//     },
+//     psbt_hex: signedPsbtHex,
+//   };
 
-  console.log({ invoke_arg: JSON.stringify(invoke_arg, bigIntReplacer) });
-  await ocActor
-    .invoke(invoke_arg)
-    .then((res) => {
-      if ("Err" in res) {
-        throw new Error(res.Err);
-      }
-      console.log("invoke success and txid ", res.Ok);
-      alert("Add Liquidity Success: " + res.Ok);
-      // reload page
-      window.location.reload();
-      return res.Ok;
-    })
-    .catch((err) => {
-      console.log("invoke error", err);
-      alert("Add Liquidity Failed: " + err);
-      // reload page
-      window.location.reload();
-      throw err;
-    });
-}
+//   console.log({ invoke_arg: JSON.stringify(invoke_arg, bigIntReplacer) });
+//   await ocActor
+//     .invoke(invoke_arg)
+//     .then((res) => {
+//       if ("Err" in res) {
+//         throw new Error(res.Err);
+//       }
+//       console.log("invoke success and txid ", res.Ok);
+//       alert("Add Liquidity Success: " + res.Ok);
+//       // reload page
+//       window.location.reload();
+//       return res.Ok;
+//     })
+//     .catch((err) => {
+//       console.log("invoke error", err);
+//       alert("Add Liquidity Failed: " + err);
+//       // reload page
+//       window.location.reload();
+//       throw err;
+//     });
+// }
 
-function bigIntReplacer(_key: string, value: any): any {
-  return typeof value === "bigint" ? value.toString() : value;
-}
+// function bigIntReplacer(_key: string, value: any): any {
+//   return typeof value === "bigint" ? value.toString() : value;
+// }

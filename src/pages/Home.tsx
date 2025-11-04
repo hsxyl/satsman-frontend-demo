@@ -4,9 +4,6 @@ import {
   pool_status_str,
   satsmanActor,
 } from "../canister/satsman/actor";
-import { convertUtxo, createTx, shortenAddress } from "../utils";
-import { useLoginUserBtcUtxo } from "../hooks/use-utxos";
-import { convertMaestroUtxo } from "../api/maestro";
 import { List } from "antd";
 import {
   useHomePageBlockAggregationData,
@@ -217,7 +214,7 @@ export function Home() {
                 <p>
                   Received{" "}
                   {Number(
-                    item.highest_block_states[0]?.total_auction_raised_amount! ??
+                    item.highest_block_states[0]?.total_paid_sats! ??
                       0
                   ) / 1000}{" "}
                   K Sats from {item.user_tunes.length} Satsman

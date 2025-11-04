@@ -68,6 +68,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Config = IDL.Record({
     'maximum_raising_target' : IDL.Nat64,
+    'fair_launch_lp_rune_percentage' : IDL.Nat8,
     'minimum_top_up_sats' : IDL.Nat64,
     'maximum_start_height_offset' : IDL.Nat32,
     'maximum_rune_amount' : IDL.Nat,
@@ -75,6 +76,7 @@ export const idlFactory = ({ IDL }) => {
     'finalize_threshold' : IDL.Nat32,
     'launch_span_options' : IDL.Vec(IDL.Nat32),
     'referral_bonus_percentage' : IDL.Nat8,
+    'fair_launch_auction_rune_percentage' : IDL.Nat8,
     'minimum_auction_income_for_lp_percentage' : IDL.Nat8,
     'minimum_raising_target' : IDL.Nat64,
     'maximum_top_up_sats' : IDL.Nat64,
@@ -127,9 +129,9 @@ export const idlFactory = ({ IDL }) => {
   });
   const LaunchPlan = IDL.Record({
     'start_height' : IDL.Nat32,
-    'income_for_lp_percentage' : IDL.Nat8,
     'social_info' : SocialInfo,
     'token_for_lp' : IDL.Text,
+    'income_for_lp_ratio' : IDL.Nat16,
     'rune_name' : IDL.Text,
     'banner' : IDL.Opt(IDL.Text),
     'description' : IDL.Opt(IDL.Text),
@@ -336,7 +338,6 @@ export const idlFactory = ({ IDL }) => {
         [Result_2],
         [],
       ),
-    'test_restore_test_pool' : IDL.Func([], [], []),
     'tmp_reset_to_etched' : IDL.Func([IDL.Text], [], []),
     'tune' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat8], [Result_2], []),
   });

@@ -44,6 +44,7 @@ export interface BlockState {
 export interface CoinBalance { 'id' : string, 'value' : bigint }
 export interface Config {
   'maximum_raising_target' : bigint,
+  'fair_launch_lp_rune_percentage' : number,
   'minimum_top_up_sats' : bigint,
   'maximum_start_height_offset' : number,
   'maximum_rune_amount' : bigint,
@@ -51,6 +52,7 @@ export interface Config {
   'finalize_threshold' : number,
   'launch_span_options' : Uint32Array | number[],
   'referral_bonus_percentage' : number,
+  'fair_launch_auction_rune_percentage' : number,
   'minimum_auction_income_for_lp_percentage' : number,
   'minimum_raising_target' : bigint,
   'maximum_top_up_sats' : bigint,
@@ -146,9 +148,9 @@ export interface IntentionSet {
 }
 export interface LaunchPlan {
   'start_height' : number,
-  'income_for_lp_percentage' : number,
   'social_info' : SocialInfo,
   'token_for_lp' : string,
+  'income_for_lp_ratio' : number,
   'rune_name' : string,
   'banner' : [] | [string],
   'description' : [] | [string],
@@ -308,7 +310,6 @@ export interface _SERVICE {
   'reset_blocks' : ActorMethod<[], Result_1>,
   'rollback_tx' : ActorMethod<[RollbackTxArgs], Result_1>,
   'set_user_referral_code' : ActorMethod<[string, string, string], Result_2>,
-  'test_restore_test_pool' : ActorMethod<[], undefined>,
   'tmp_reset_to_etched' : ActorMethod<[string], undefined>,
   'tune' : ActorMethod<[string, string, number], Result_2>,
 }
