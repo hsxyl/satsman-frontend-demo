@@ -43,22 +43,22 @@ export interface BlockState {
 }
 export interface CoinBalance { 'id' : string, 'value' : bigint }
 export interface Config {
+  'minimum_extract_auction_income_percentage' : number,
   'maximum_raising_target' : bigint,
-  'fair_launch_lp_rune_percentage' : number,
   'minimum_top_up_sats' : bigint,
   'maximum_start_height_offset' : number,
   'maximum_rune_amount' : bigint,
+  'maximum_extract_auction_income_percentage' : number,
   'exchange_fee_percentage' : number,
   'finalize_threshold' : number,
   'launch_span_options' : Uint32Array | number[],
   'referral_bonus_percentage' : number,
-  'fair_launch_auction_rune_percentage' : number,
-  'minimum_auction_income_for_lp_percentage' : number,
   'minimum_raising_target' : bigint,
   'maximum_top_up_sats' : bigint,
   'create_fee_sats' : bigint,
   'minimum_rune_amount' : bigint,
   'minimum_start_height_offset' : number,
+  'minimum_launch_token_in_total_supply_percentage' : number,
 }
 export interface CreateLaunchState {
   'create_pool_fee' : bigint,
@@ -148,16 +148,15 @@ export interface IntentionSet {
 }
 export interface LaunchPlan {
   'start_height' : number,
+  'launch_token' : string,
   'social_info' : SocialInfo,
-  'token_for_lp' : string,
-  'income_for_lp_ratio' : number,
   'rune_name' : string,
   'banner' : [] | [string],
   'description' : [] | [string],
   'is_fair_launch' : boolean,
   'span_blocks' : number,
   'raising_target_sats' : bigint,
-  'token_for_auction' : string,
+  'extract_auction_income_ratio' : number,
   'rune_id' : string,
   'income_distribution' : Array<IncomeDistributionItem>,
 }

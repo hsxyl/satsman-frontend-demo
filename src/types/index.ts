@@ -7,9 +7,8 @@ export * from "./orchestrator";
 export type LaunchPlan = {
     rune_name: string;
     rune_id: string;
-    token_for_auction: string;
-    token_for_lp: string;
-    income_for_lp_percentage: number;
+    launch_token: string;
+    extract_auction_income_ratio: number;
     income_distribution: IncomeDistributionItem[];
 
     description?: string; 

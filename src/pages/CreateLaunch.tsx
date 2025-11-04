@@ -100,9 +100,11 @@ function runeSupply(runeEntry: RuneEntry): bigint {
 }
 
 export function CreateLaunch() {
+  const [extractAuctionIncomeRatio, setExtractAuctionIncomeRatio] = useState<number | undefined>(undefined);
   const [lpPercentage, setLpPercentage] = useState<number | undefined>(undefined);
-  const [tokenForAuction, setTokenForAuction] = useState<string>("");
-  const [tokenForLp, setTokenForLp] = useState<string>("Wait For Calculation...");
+  const [tokenForLaunch, setTokenForLaunch] = useState<string>("");
+  // const [tokenForAuction, setTokenForAuction] = useState<string>("");
+  // const [tokenForLp, setTokenForLp] = useState<string>("Wait For Calculation...");
   const [runeInfo, setRuneInfo] = useState<RuneEntry | undefined>(undefined);
   const [runeName, setRuneName] = useState<string>("");
   const [isFairLaunch, setIsFairLaunch] = useState<boolean>(false);
@@ -142,26 +144,11 @@ export function CreateLaunch() {
     );
     let sup = runeSupply(runeInfo);
     if (isFairLaunch) {
-      setTokenForAuction(((sup * BigInt(51)) / BigInt(100)).toString());
-      setTokenForLp(((sup * BigInt(49)) / BigInt(100)).toString());
-      console.log({
-        tokenForAuction: ((sup * BigInt(51)) / BigInt(100)).toString(),
-        tokenForLp: ((sup * BigInt(49)) / BigInt(100)).toString(),
-      });
-    } else {
-        setTokenForAuction("");
-        setTokenForLp("Wait For Calculation...");
+      setExtractAuctionIncomeRatio(0);
+      setTokenForLaunch(sup.toString());
     }
     return [finished, sup];
   }, [latestBlockHeight, runeInfo, config, isFairLaunch]);
-
-  useEffect(() => {
-    console.log({ lpPercentage, tokenForAuction });
-    if (!lpPercentage || !tokenForAuction || isFairLaunch) {
-      return;
-    }
-    setTokenForLp(((BigInt(tokenForAuction) * BigInt(lpPercentage)) / BigInt(100)).toString());
-  }, [lpPercentage, tokenForAuction, isFairLaunch]);
 
   const { signPsbt, address, paymentAddress } = useLaserEyes();
   const { client } = useRee();
@@ -204,11 +191,8 @@ export function CreateLaunch() {
       let action_params: LaunchPlan= {
         rune_name: runeName,
         rune_id: rune_id,
-        token_for_auction: tokenForAuction,
-        token_for_lp: tokenForLp,
-        income_for_lp_percentage: isFairLaunch? 
-        100 - config!.exchange_fee_percentage - config!.referral_bonus_percentage :
-        lpPercentage!,
+        launch_token: tokenForLaunch,
+        extract_auction_income_ratio: extractAuctionIncomeRatio!,
         income_distribution: (values.income_distribution ?? []).map((item) => ({
           label: item.label,
           percentage: Number(item.percentage!),
@@ -234,8 +218,7 @@ export function CreateLaunch() {
       //   return
 
       let new_pool_address = await satsmanActor.new_pool(runeName);
-      let total_rune_amount =
-        BigInt(tokenForAuction!) + BigInt(tokenForLp!);
+      let total_rune_amount = BigInt(tokenForLaunch!);
       console.log({ new_pool_address, rune_id, total_rune_amount });
       tx.addIntention({
         poolAddress: new_pool_address,
@@ -253,9 +236,7 @@ export function CreateLaunch() {
             from: paymentAddress,
             coin: {
               id: rune_id,
-              value:
-                BigInt(tokenForAuction!) +
-                BigInt(tokenForLp!),
+              value: total_rune_amount,
             },
           },
         ],
@@ -271,7 +252,7 @@ export function CreateLaunch() {
 
       console.log("invoke success and txid ", txid);
       alert("Create Launch Success: " + txid);
-      window.location.assign(`/`);
+      // window.location.assign(`/`);
     } catch (e) {
       console.error(e);
       alert("Create Launch failed: " + (e as Error).message);
@@ -309,23 +290,18 @@ export function CreateLaunch() {
           <Switch checked={isFairLaunch} onChange={setIsFairLaunch} />
         </div>
 
-        <Form.Item name="token_for_auction" label="Token for Auction: ">
-          {isFairLaunch ? (
-            <span>{tokenForAuction}</span>
-          ) : (
-            // <input
-            // // readOnly={isMeme}
-            // value={tokenForAuction}
-            // placeholder="Waiting for Calculation..."
-            // />
+        <Form.Item label="Token Amount for Launch: ">
+
+          {
+            isFairLaunch?
+             <span>{supply?.toString()}</span>
+            :
             <Input
-            value={tokenForAuction}
-            onChange={(e) => setTokenForAuction(e.target.value)}
-              placeholder={`At least ${
-                supply && (supply * BigInt(5)) / BigInt(100)
-              }`}
-            />
-          )}
+              value={tokenForLaunch}
+              onChange={(e) => setTokenForLaunch(e.target.value)}
+              placeholder={`At least ${ (config?.minimum_launch_token_in_total_supply_percentage??0) * Number(supply??0) / 100}`}
+             />
+          }
         </Form.Item>
 
         <Form.Item name="raising_target_sats" label="Raising Target(K sats): ">
@@ -351,30 +327,19 @@ export function CreateLaunch() {
             })}
           </Select>
         </Form.Item>
-        {!isFairLaunch && (
-          <>
-            <Form.Item name="lp_percentage" label="Auction Income for LP (%): ">
-              <Input
-                value={lpPercentage}
-                onChange={(e) => setLpPercentage(Number(e.target.value))}
-                placeholder={`${
-                  config!.minimum_auction_income_for_lp_percentage
-                }-${
-                  100 -
-                  Number(config!.exchange_fee_percentage) -
-                  Number(config!.referral_bonus_percentage)
-                }`}
-              />
-            </Form.Item>
-          </>
-        )}
 
-        <Form.Item name="token_for_lp" label="Token for Lp: ">
-            <span>{tokenForLp}</span>
+        <Form.Item label="Extract Auction Income Ratio (%): ">
+          <Input
+            disabled={isFairLaunch}
+            value={extractAuctionIncomeRatio}
+            onChange={(e) => setExtractAuctionIncomeRatio(Number(e.target.value))}
+            placeholder={`${config!.minimum_extract_auction_income_percentage} - ${config!.maximum_extract_auction_income_percentage}`}
+          />
         </Form.Item>
+      
         {!isFairLaunch && (
           <>
-            <p className="mr-4">{100 - (lpPercentage??0) - (config?.exchange_fee_percentage??0) - (config?.referral_bonus_percentage??0)}% token auction income will be receive by:</p>
+            <p className="mr-4">{extractAuctionIncomeRatio}% token auction income will be receive by:</p>
             <Form.List name="income_distribution">
               {(fields, { add, remove }) => (
                 <>

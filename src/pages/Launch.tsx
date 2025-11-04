@@ -1412,9 +1412,8 @@ function LaunchInfo({
       </p>
       <p>Dev {pool_business_state.creator}</p>
       <p>
-        Token for Auction: {pool_business_state.launch_plan.token_for_auction}
+        Launch Token: {pool_business_state.launch_plan.launch_token}
       </p>
-      <p>Token for Dex LP: {pool_business_state.launch_plan.token_for_lp}</p>
       <p>
         {pool_business_state.launch_plan.income_distribution
           .map((e) => e.percentage)

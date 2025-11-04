@@ -67,22 +67,22 @@ export const idlFactory = ({ IDL }) => {
     'referral_reward_in_current_block' : IDL.Float64,
   });
   const Config = IDL.Record({
+    'minimum_extract_auction_income_percentage' : IDL.Nat8,
     'maximum_raising_target' : IDL.Nat64,
-    'fair_launch_lp_rune_percentage' : IDL.Nat8,
     'minimum_top_up_sats' : IDL.Nat64,
     'maximum_start_height_offset' : IDL.Nat32,
     'maximum_rune_amount' : IDL.Nat,
+    'maximum_extract_auction_income_percentage' : IDL.Nat8,
     'exchange_fee_percentage' : IDL.Nat8,
     'finalize_threshold' : IDL.Nat32,
     'launch_span_options' : IDL.Vec(IDL.Nat32),
     'referral_bonus_percentage' : IDL.Nat8,
-    'fair_launch_auction_rune_percentage' : IDL.Nat8,
-    'minimum_auction_income_for_lp_percentage' : IDL.Nat8,
     'minimum_raising_target' : IDL.Nat64,
     'maximum_top_up_sats' : IDL.Nat64,
     'create_fee_sats' : IDL.Nat64,
     'minimum_rune_amount' : IDL.Nat,
     'minimum_start_height_offset' : IDL.Nat32,
+    'minimum_launch_token_in_total_supply_percentage' : IDL.Nat8,
   });
   const CreateLaunchState = IDL.Record({
     'create_pool_fee' : IDL.Nat64,
@@ -129,16 +129,15 @@ export const idlFactory = ({ IDL }) => {
   });
   const LaunchPlan = IDL.Record({
     'start_height' : IDL.Nat32,
+    'launch_token' : IDL.Text,
     'social_info' : SocialInfo,
-    'token_for_lp' : IDL.Text,
-    'income_for_lp_ratio' : IDL.Nat16,
     'rune_name' : IDL.Text,
     'banner' : IDL.Opt(IDL.Text),
     'description' : IDL.Opt(IDL.Text),
     'is_fair_launch' : IDL.Bool,
     'span_blocks' : IDL.Nat32,
     'raising_target_sats' : IDL.Nat64,
-    'token_for_auction' : IDL.Text,
+    'extract_auction_income_ratio' : IDL.Nat8,
     'rune_id' : IDL.Text,
     'income_distribution' : IDL.Vec(IncomeDistributionItem),
   });
