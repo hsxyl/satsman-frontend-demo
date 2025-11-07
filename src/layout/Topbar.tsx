@@ -40,7 +40,7 @@ export function Topbar() {
         </Link>
 
         <div className="mr-2">
-          {address ? <AccountButton /> : <ConnectButton />}
+          {address && identityAddress ? <AccountButton /> : <ConnectButton />}
         </div>
       </div>
     </div>
