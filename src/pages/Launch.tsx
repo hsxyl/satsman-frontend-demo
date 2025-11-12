@@ -512,7 +512,7 @@ function UserManager({
   const account = userInfoOfLaunch?.account?.[0];
   const poolState = poolStateAndKey?.[0]?.[0];
 
-  const withdrawButtonHint = () => {
+  const claimButtonHint = () => {
     if (status_str !== "Completed") {
       return "Launch not completed yet.";
     }
@@ -535,15 +535,15 @@ function UserManager({
       BigInt(account?.total_referral_reward ?? 0);
 
     if (withdrawableSats <= BigInt(0)) {
-      return "No sats to withdraw.";
+      return "No sats to claim.";
     }
 
-    return `Withdraw ${withdrawableSats} sats and ${
+    return `Claim ${withdrawableSats} sats and ${
       account?.total_minted_rune_amount ?? 0
     } rune`;
   };
 
-  const withdrawFailedButtonHint = () => {
+  const refundButtonHint = () => {
     if (status_str !== "Completed") {
       return "Launch not completed yet.";
     }
@@ -799,9 +799,10 @@ function UserManager({
               let pool_state = pool_state_res[0][0]!;
               let key = pool_state_res[0][1]!;
 
-              let account = userInfoOfLaunch?.account?.[0];
-
-              console.log("btcUtxos before withdraw", { btcUtxos });
+               let claim_coins = await satsmanActor.get_user_withdrawable_coins(
+                pool_business_state.pool_address!,
+                address!
+              )
 
               const tx = await createTransaction();
 
@@ -811,27 +812,17 @@ function UserManager({
                 poolUtxos: [
                   convertUnspentOutputToUtxo(convertUtxo(pool_state.utxo, key)),
                 ],
-                action: "withdraw",
+                action: "claim",
                 inputCoins: [],
-                outputCoins: [
-                  {
+                outputCoins: claim_coins.map(
+                  (coin) => ({
                     to: address,
                     coin: {
-                      id: BITCOIN.id,
-                      value:
-                        account!.sats_balance -
-                        account!.total_paid_sats +
-                        BigInt(Math.floor(account!.total_referral_reward)),
+                      id: coin.id,
+                      value: coin.value,
                     },
-                  },
-                  {
-                    to: address,
-                    coin: {
-                      id: pool_business_state.rune_id,
-                      value: BigInt(account!.total_minted_rune_amount),
-                    },
-                  },
-                ],
+                  })
+                ),
                 nonce: pool_state.nonce + BigInt(1),
               });
 
@@ -839,44 +830,18 @@ function UserManager({
               const res = await signPsbt(psbt.toBase64());
               const signedPsbtHex = res!.signedPsbtHex!;
               const txid = await tx.send(signedPsbtHex);
-              alert("Withdraw Success: " + txid);
-
-              // await withdrawTx({
-              //   userBtcUtxos: btcUtxos!.map((e) =>
-              //     convertMaestroUtxo(e, paymentPublicKey)
-              //   ),
-              //   runeId: pool_business_state.rune_id,
-              //   launchPoolBtcUtxo: convertUtxo(pool_state.utxo, key),
-
-              //   paymentAddress: paymentAddress,
-              //   address: address,
-              //   launchPoolAddress: pool_business_state.pool_address!,
-              //   signPsbt: signPsbt,
-              //   launchPoolNonce: pool_state.nonce + BigInt(1),
-              //   withdrawBtcAmount:
-              //     account!.sats_balance -
-              //     account!.total_paid_sats +
-              //     BigInt(Math.floor(account!.total_referral_reward)),
-              //   withdrawRuneAmount: BigInt(account!.total_minted_rune_amount),
-              // })
-              //   .then((e) => {
-              //     console.log("invoke success and txid ", e);
-              //     alert("Withdraw Success: " + e);
-              //   })
-              //   .catch((e) => {
-              //     throw e;
-              //   });
+              alert("Claim Success: " + txid);
             } catch (e) {
               console.error(e);
-              alert("Withdraw failed: " + (e as Error).message);
+              alert("Claim failed: " + (e as Error).message);
             } finally {
               setCalling(false);
             }
           }}
         >
-          {account?.withdrawn ? "Already Withdrawn" : "Withdraw"}
+          {account?.withdrawn ? "Already Claimed" : "Claim"}
         </Button>
-        {withdrawButtonHint()}
+        {claimButtonHint()}
       </div>
 
       <div className="my-8">
@@ -902,7 +867,10 @@ function UserManager({
               let pool_state = pool_state_res[0][0]!;
               let key = pool_state_res[0][1]!;
 
-              let account = userInfoOfLaunch?.account?.[0];
+              let refund_coins = await satsmanActor.get_user_withdrawable_coins(
+                pool_business_state.pool_address!,
+                address!
+              )
 
               const tx = await createTransaction();
 
@@ -912,17 +880,26 @@ function UserManager({
                 poolUtxos: [
                   convertUnspentOutputToUtxo(convertUtxo(pool_state.utxo, key)),
                 ],
-                action: "withdraw",
+                action: "refund",
                 inputCoins: [],
-                outputCoins: [
-                  {
+                outputCoins: refund_coins.map(
+                  (coin) => ({
                     to: address,
                     coin: {
-                      id: BITCOIN.id,
-                      value: account!.sats_balance,
+                      id: coin.id,
+                      value: coin.value,
                     },
-                  },
-                ],
+                  })
+                ), 
+                // [
+                //   {
+                //     to: address,
+                //     coin: {
+                //       id: BITCOIN.id,
+                //       value: account!.sats_balance,
+                //     },
+                //   },
+                // ],
                 nonce: pool_state.nonce + BigInt(1),
               });
 
@@ -930,104 +907,28 @@ function UserManager({
               const res = await signPsbt(psbt.toBase64());
               const signedPsbtHex = res!.signedPsbtHex!;
               const txid = await tx.send(signedPsbtHex);
-              alert("Withdraw Success: " + txid);
+              alert("Refund Success: " + txid);
             } catch (e) {
               console.error(e);
-              alert("Withdraw failed: " + (e as Error).message);
+              alert("Refund failed: " + (e as Error).message);
             } finally {
               setCalling(false);
             }
           }}
         >
-          {account?.withdrawn ? "Already Withdrawn" : "Withdraw When Failed"}
+          {account?.withdrawn ? "Already Refunded" : "Refund"}
         </Button>
-        {withdrawFailedButtonHint()}
+        {refundButtonHint()}
       </div>
 
       <div className="my-4">
-        {/* {poolState?.withdrawn_rune ? (
-          <p>
-            Creator has withdrawn rune, txid:{" "}
-            {pool_business_state.creator_withdraw_rune_txid}.
-          </p>
-        ) : ( */}
-        <Button
-          loading={calling}
-          disabled={outcome_str !== "Failed" || poolState?.withdrawn_rune}
-          onClick={async () => {
-            try {
-              setCalling(true);
-              let pool_state_res =
-                await satsmanActor.get_pool_with_state_and_key(
-                  pool_business_state.pool_address!
-                );
-              if (pool_state_res.length === 0) {
-                throw "No pool found for this address.";
-              }
-              let pool_state = pool_state_res[0][0]!;
-              let key = pool_state_res[0][1]!;
-              // const tx = await createTransaction();
-              let tx = await client.createTransaction({
-                address: address,
-                paymentAddress: paymentAddress,
-                mergeSelfRuneBtcOutputs: true,
-              });
-
-              let intention = {
-                exchangeId: SATSMAN_EXCHANGE_ID,
-                poolAddress: pool_business_state.pool_address!,
-                poolUtxos: [
-                  convertUnspentOutputToUtxo(convertUtxo(pool_state.utxo, key)),
-                ],
-                action: "withdraw_launch_rune",
-                inputCoins: [],
-                outputCoins: [
-                  {
-                    to: pool_business_state.creator,
-                    coin: {
-                      id: pool_business_state.rune_id,
-                      value:
-                        BigInt(pool_business_state.rune_amount_for_launch) +
-                        BigInt(pool_business_state.rune_amount_for_lp),
-                    },
-                  },
-                ],
-                nonce: pool_state!.nonce + BigInt(1),
-              };
-
-              tx.addIntention(intention);
-
-              const { psbt } = await tx.build();
-              const res = await signPsbt(psbt.toBase64());
-              const signedPsbtHex = res!.signedPsbtHex!;
-
-              console.log({
-                intention,
-                psbt: psbt.toBase64(),
-                signedPsbtHex,
-              });
-
-              const txid = await tx.send(signedPsbtHex);
-
-              console.log("Invoke success and txid ", txid);
-              alert("Withdraw Rune Success: " + txid);
-            } catch (e) {
-              console.error(e);
-              alert("Creator Withdraw Rune Failed: " + (e as Error).message);
-            } finally {
-              setCalling(false);
-            }
-          }}
-        >
-          Creator Withdraw Rune When Failed
-        </Button>
+       
         {poolState?.withdrawn_rune && (
           <p>
             Creator has withdrawn rune, txid:{" "}
             {pool_business_state.creator_withdraw_rune_txid}.
           </p>
         )}
-        {/* )} */}
       </div>
 
       {/* <LaunchSuccess pool_business_state={pool_business_state} /> */}

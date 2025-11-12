@@ -28,6 +28,7 @@ export function Home() {
     sort_by: [{ TVL: null }],
     sort_order: [],
     status_filters: [{ Upcoming: null }],
+    outcome_filters: [],
     search_text: [],
     featured_first: true,
   });
@@ -41,6 +42,7 @@ export function Home() {
     sort_by: [{ TVL: null }],
     sort_order: [],
     status_filters: [{ Ongoing: null }],
+    outcome_filters: [],
     search_text: [],
     featured_first: true,
   });
@@ -54,6 +56,7 @@ export function Home() {
     sort_by: [{ EndHeight: null }],
     sort_order: [],
     status_filters: [{ Completed: null }],
+    outcome_filters: [],
     search_text: [],
     featured_first: false,
   });
@@ -122,9 +125,8 @@ export function Home() {
                 </p>
                 <p>
                   Received:{" "}
-                  {Number(
-                    item.highest_block_states[0]?.total_paid_sats ?? 0
-                  ) / 1000}{" "}
+                  {Number(item.highest_block_states[0]?.total_paid_sats ?? 0) /
+                    1000}{" "}
                   K Sats
                 </p>
                 <p>{item.user_tunes.length} Satsman</p>
@@ -175,8 +177,8 @@ export function Home() {
                 <p>
                   Deposit{" "}
                   {Number(
-                    item.highest_block_states[0]
-                      ?.total_deposit_btc_balances ?? 0
+                    item.highest_block_states[0]?.total_deposit_btc_balances ??
+                      0
                   ) / 1000}{" "}
                   K Sats
                 </p>
@@ -213,10 +215,8 @@ export function Home() {
                 <p>{item.user_tunes.length} Satsman</p>
                 <p>
                   Received{" "}
-                  {Number(
-                    item.highest_block_states[0]?.total_paid_sats! ??
-                      0
-                  ) / 1000}{" "}
+                  {Number(item.highest_block_states[0]?.total_paid_sats! ?? 0) /
+                    1000}{" "}
                   K Sats from {item.user_tunes.length} Satsman
                 </p>
                 <p>{pool_outcome_str(item.outcome)}</p>
