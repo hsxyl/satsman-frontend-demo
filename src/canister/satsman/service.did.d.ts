@@ -3,10 +3,12 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface Account {
+  'reward_from_referral_in_current_block' : number,
   'minted_rune_in_current_block' : number,
   'withdraw_txid' : [] | [string],
   'price_in_current_block' : number,
   'total_paid_sats' : bigint,
+  'total_reward_from_referral' : number,
   'last_update_block' : number,
   'total_minted_rune_amount' : number,
   'address' : string,
@@ -178,6 +180,12 @@ export interface NewBlockInfo {
 export type Outcome = { 'Failed' : null } |
   { 'Listed' : null } |
   { 'Success' : null };
+export type OutcomeFilter = { 'NotFailed' : null } |
+  { 'NotListed' : null } |
+  { 'Failed' : null } |
+  { 'Listed' : null } |
+  { 'NotSuccess' : null } |
+  { 'Success' : null };
 export interface OutputCoin { 'to' : string, 'coin' : CoinBalance }
 export interface Page {
   'page_size' : number,
@@ -196,6 +204,7 @@ export interface PageQuery {
   'page' : number,
   'sort_order' : [] | [SortOrder],
   'search_text' : [] | [string],
+  'outcome_filters' : [] | [OutcomeFilter],
 }
 export interface PoolBasic { 'name' : string, 'address' : string }
 export interface PoolBusinessStateView {
@@ -203,6 +212,7 @@ export interface PoolBusinessStateView {
   'creator' : string,
   'featured' : boolean,
   'start_height' : number,
+  'pool_name' : string,
   'end_height' : number,
   'income_distribution_list' : Array<[string, bigint]>,
   'pubkey' : string,
@@ -243,6 +253,22 @@ export type Result_1 = { 'Ok' : null } |
 export type Result_2 = { 'Ok' : null } |
   { 'Err' : ExchangeError };
 export interface RollbackTxArgs { 'txid' : string, 'reason_code' : string }
+export interface RuneEntry {
+  'confirmations' : number,
+  'mints' : bigint,
+  'terms' : [] | [Terms],
+  'etching' : string,
+  'turbo' : boolean,
+  'premine' : bigint,
+  'divisibility' : number,
+  'spaced_rune' : string,
+  'number' : bigint,
+  'timestamp' : bigint,
+  'block' : bigint,
+  'burned' : bigint,
+  'rune_id' : string,
+  'symbol' : [] | [string],
+}
 export interface SocialInfo {
   'twitter' : [] | [string],
   'website' : [] | [string],
@@ -256,13 +282,20 @@ export type SortBy = { 'TVL' : null } |
   { 'EndHeight' : null };
 export type SortOrder = { 'Asc' : null } |
   { 'Desc' : null };
+export interface Terms {
+  'cap' : [] | [bigint],
+  'height' : [[] | [bigint], [] | [bigint]],
+  'offset' : [[] | [bigint], [] | [bigint]],
+  'amount' : [] | [bigint],
+}
 export interface UserInfoOfLaunch {
   'tune' : number,
+  'referral_reward' : number,
+  'referral_list' : Array<string>,
   'account' : [] | [Account],
   'balance_include_unconfirmed' : bigint,
+  'referral_address' : [] | [string],
   'launch_pool_address' : string,
-  'referred_by_code' : [] | [string],
-  'my_referral_code' : [] | [string],
 }
 export interface UserLaunchRecordPools {
   'user_referral_pools' : Array<PoolBusinessStateView>,
@@ -290,6 +323,7 @@ export interface _SERVICE {
   'get_launch_pool' : ActorMethod<[string], [] | [PoolBusinessStateView]>,
   'get_launch_pool_block_states' : ActorMethod<[string], Array<BlockState>>,
   'get_launch_pools' : ActorMethod<[], Array<PoolBusinessStateView>>,
+  'get_pool_address_by_name' : ActorMethod<[string], [] | [string]>,
   'get_pool_info' : ActorMethod<[GetPoolInfoArgs], [] | [PoolInfo]>,
   'get_pool_list' : ActorMethod<[], Array<PoolBasic>>,
   'get_pool_with_state_and_key' : ActorMethod<
@@ -298,8 +332,13 @@ export interface _SERVICE {
   >,
   'get_user_info_of_launch' : ActorMethod<[string, string], UserInfoOfLaunch>,
   'get_user_records' : ActorMethod<[string], UserLaunchRecordPools>,
+  'get_user_withdrawable_coins' : ActorMethod<
+    [string, string],
+    Array<CoinBalance>
+  >,
   'new_block' : ActorMethod<[NewBlockInfo], Result_1>,
   'new_pool' : ActorMethod<[string], string>,
+  'query_all_rune_entries' : ActorMethod<[], Array<[string, RuneEntry]>>,
   'query_block_index_data' : ActorMethod<
     [number, number],
     Array<[number, BlockAggregateData]>
@@ -308,7 +347,7 @@ export interface _SERVICE {
   'query_tx_event' : ActorMethod<[string], [] | [Event]>,
   'reset_blocks' : ActorMethod<[], Result_1>,
   'rollback_tx' : ActorMethod<[RollbackTxArgs], Result_1>,
-  'set_user_referral_code' : ActorMethod<[string, string, string], Result_2>,
+  'set_user_referral_code' : ActorMethod<[string, string, string], string>,
   'tmp_reset_to_etched' : ActorMethod<[string], undefined>,
   'tune' : ActorMethod<[string, string, number], Result_2>,
 }

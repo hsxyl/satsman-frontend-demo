@@ -34,10 +34,12 @@ export const idlFactory = ({ IDL }) => {
   const Result = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
   const Result_1 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
   const Account = IDL.Record({
+    'reward_from_referral_in_current_block' : IDL.Float64,
     'minted_rune_in_current_block' : IDL.Float64,
     'withdraw_txid' : IDL.Opt(IDL.Text),
     'price_in_current_block' : IDL.Float64,
     'total_paid_sats' : IDL.Nat64,
+    'total_reward_from_referral' : IDL.Float64,
     'last_update_block' : IDL.Nat32,
     'total_minted_rune_amount' : IDL.Float64,
     'address' : IDL.Text,
@@ -146,6 +148,7 @@ export const idlFactory = ({ IDL }) => {
     'creator' : IDL.Text,
     'featured' : IDL.Bool,
     'start_height' : IDL.Nat32,
+    'pool_name' : IDL.Text,
     'end_height' : IDL.Nat32,
     'income_distribution_list' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat64)),
     'pubkey' : IDL.Text,
@@ -213,11 +216,12 @@ export const idlFactory = ({ IDL }) => {
   });
   const UserInfoOfLaunch = IDL.Record({
     'tune' : IDL.Nat8,
+    'referral_reward' : IDL.Float64,
+    'referral_list' : IDL.Vec(IDL.Text),
     'account' : IDL.Opt(Account),
     'balance_include_unconfirmed' : IDL.Nat64,
+    'referral_address' : IDL.Opt(IDL.Text),
     'launch_pool_address' : IDL.Text,
-    'referred_by_code' : IDL.Opt(IDL.Text),
-    'my_referral_code' : IDL.Opt(IDL.Text),
   });
   const UserLaunchRecordPools = IDL.Record({
     'user_referral_pools' : IDL.Vec(PoolBusinessStateView),
@@ -229,6 +233,28 @@ export const idlFactory = ({ IDL }) => {
     'confirmed_txids' : IDL.Vec(IDL.Text),
     'block_timestamp' : IDL.Nat64,
     'block_height' : IDL.Nat32,
+  });
+  const Terms = IDL.Record({
+    'cap' : IDL.Opt(IDL.Nat),
+    'height' : IDL.Tuple(IDL.Opt(IDL.Nat64), IDL.Opt(IDL.Nat64)),
+    'offset' : IDL.Tuple(IDL.Opt(IDL.Nat64), IDL.Opt(IDL.Nat64)),
+    'amount' : IDL.Opt(IDL.Nat),
+  });
+  const RuneEntry = IDL.Record({
+    'confirmations' : IDL.Nat32,
+    'mints' : IDL.Nat,
+    'terms' : IDL.Opt(Terms),
+    'etching' : IDL.Text,
+    'turbo' : IDL.Bool,
+    'premine' : IDL.Nat,
+    'divisibility' : IDL.Nat8,
+    'spaced_rune' : IDL.Text,
+    'number' : IDL.Nat64,
+    'timestamp' : IDL.Nat64,
+    'block' : IDL.Nat64,
+    'burned' : IDL.Nat,
+    'rune_id' : IDL.Text,
+    'symbol' : IDL.Opt(IDL.Text),
   });
   const BlockAggregateData = IDL.Record({
     'total_paying_sats' : IDL.Nat64,
@@ -243,6 +269,14 @@ export const idlFactory = ({ IDL }) => {
     'EndHeight' : IDL.Null,
   });
   const SortOrder = IDL.Variant({ 'Asc' : IDL.Null, 'Desc' : IDL.Null });
+  const OutcomeFilter = IDL.Variant({
+    'NotFailed' : IDL.Null,
+    'NotListed' : IDL.Null,
+    'Failed' : IDL.Null,
+    'Listed' : IDL.Null,
+    'NotSuccess' : IDL.Null,
+    'Success' : IDL.Null,
+  });
   const PageQuery = IDL.Record({
     'sort_by' : IDL.Opt(SortBy),
     'featured_first' : IDL.Bool,
@@ -251,6 +285,7 @@ export const idlFactory = ({ IDL }) => {
     'page' : IDL.Nat32,
     'sort_order' : IDL.Opt(SortOrder),
     'search_text' : IDL.Opt(IDL.Text),
+    'outcome_filters' : IDL.Opt(OutcomeFilter),
   });
   const Page = IDL.Record({
     'page_size' : IDL.Nat32,
@@ -304,6 +339,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(PoolBusinessStateView)],
         ['query'],
       ),
+    'get_pool_address_by_name' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(IDL.Text)],
+        ['query'],
+      ),
     'get_pool_info' : IDL.Func(
         [GetPoolInfoArgs],
         [IDL.Opt(PoolInfo)],
@@ -321,8 +361,18 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'get_user_records' : IDL.Func([IDL.Text], [UserLaunchRecordPools], []),
+    'get_user_withdrawable_coins' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(CoinBalance)],
+        ['query'],
+      ),
     'new_block' : IDL.Func([NewBlockInfo], [Result_1], []),
     'new_pool' : IDL.Func([IDL.Text], [IDL.Text], []),
+    'query_all_rune_entries' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Text, RuneEntry))],
+        ['query'],
+      ),
     'query_block_index_data' : IDL.Func(
         [IDL.Nat32, IDL.Nat32],
         [IDL.Vec(IDL.Tuple(IDL.Nat32, BlockAggregateData))],
@@ -334,7 +384,7 @@ export const idlFactory = ({ IDL }) => {
     'rollback_tx' : IDL.Func([RollbackTxArgs], [Result_1], []),
     'set_user_referral_code' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text],
-        [Result_2],
+        [IDL.Text],
         [],
       ),
     'tmp_reset_to_etched' : IDL.Func([IDL.Text], [], []),

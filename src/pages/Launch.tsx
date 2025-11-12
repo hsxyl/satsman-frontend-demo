@@ -458,7 +458,7 @@ function UserManager({
   } = useUserInfoOfLaunch(pool_business_state.pool_address, address);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [referralCode, setReferralCode] = useState<string | undefined>(
-    userInfoOfLaunch?.referred_by_code?.[0]
+    userInfoOfLaunch?.referral_address?.[0]
   );
   const [calling, setCalling] = useState<boolean>(false);
   const [tune, setTune] = useState<number | undefined>(userInfoOfLaunch?.tune);
@@ -473,7 +473,7 @@ function UserManager({
   } = useGetPoolWithStateAndKey(pool_business_state.pool_address);
 
   useEffect(() => {
-    setReferralCode(userInfoOfLaunch?.referred_by_code?.[0]);
+    setReferralCode(userInfoOfLaunch?.referral_address?.[0]);
   }, [userInfoOfLaunch]);
 
   const isLoading = useMemo(() => {
@@ -585,11 +585,11 @@ function UserManager({
       </p>
       <p>Your Referral Reward: {account?.total_referral_reward ?? 0} S</p>
 
-      {userInfoOfLaunch?.my_referral_code.length === 1 ? (
+      {userInfoOfLaunch?.referral_address.length === 1 ? (
         <p className="mb-8">
           Your Referral Code:{" "}
           <span className="text-blue-500 font-mono">
-            {userInfoOfLaunch?.my_referral_code[0]}
+            {userInfoOfLaunch?.referral_address[0]}
           </span>
         </p>
       ) : (
@@ -629,7 +629,7 @@ function UserManager({
         />
         <Button
           disabled={
-            (userInfoOfLaunch?.referred_by_code.length ?? 0) > 0 ||
+            (userInfoOfLaunch?.referral_address.length ?? 0) > 0 ||
             (status_str !== "Ongoing" && status_str !== "Upcoming")
           }
           loading={calling}
@@ -652,12 +652,7 @@ function UserManager({
                 )
                 .then((e) => {
                   console.log({ e });
-                  if ("Err" in e) {
-                    throw new Error(e.Err.toString());
-                  }
-                  if ("Ok" in e) {
-                    alert("Set Referral Code Success!");
-                  }
+                  alert("Set Referral Code Success!");
                 });
               refetchUserInfo();
             } catch (e) {
