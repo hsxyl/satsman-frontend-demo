@@ -7,31 +7,34 @@ import { useEffect, useState } from "react";
 
 export function AccountButton() {
   const laserEyes = useLaserEyes();
-  const { isInitializing, disconnect, address } =
-    laserEyes;
-  const {
-    identity,
-    // identityAddress,
-    clear,
-  } = useSiwbIdentity();
+  const { isInitializing, disconnect, address, paymentAddress } = laserEyes;
+  const { 
+    identity, 
+    identityAddress, 
+    prepareLogin, 
+    setLaserEyes,
+    login, 
+    clear } =
+    useSiwbIdentity();
 
-  // useEffect(() => {
-  //   (async () => {
-  //     if (!address) {
-  //       return;
-  //     }
+  console.log("AccountButton render", { identity, address });
 
-  //     if (!identityAddress || identityAddress !== address) {
-	// 	console.log("identityAddress not match, clear and setLaserEyes");
-  //       clear();
-	// 	// @ts-ignore
-  //       await setLaserEyes(laserEyes, UNISAT);
-  //       prepareLogin();
-  //       const res = await login();
-  //       console.log("finish login", res);
-  //     }
-  //   })();
-  // }, [address]);
+  useEffect(() => {
+    (async () => {
+      if (!address) {
+        return;
+      }
+
+      if (!identityAddress || identityAddress !== address) {
+        console.log("identityAddress not match, clear and setLaserEyes");
+        clear();
+        await setLaserEyes(laserEyes, UNISAT);
+        prepareLogin();
+        const res = await login();
+        console.log("finish login", res);
+      }
+    })();
+  }, [address]);
 
   return (
     <div>

@@ -18,6 +18,7 @@ export function AllLaunch() {
     status_filters: [],
     search_text: [],
     featured_first: false,
+    outcome_filters: [],
   });
 
   console.log("all launch pools:", data);

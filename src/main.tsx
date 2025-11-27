@@ -51,7 +51,7 @@ if (container) {
             }}
           >
             <SiwbIdentityProvider<siwbService>
-              canisterId={"stxih-wyaaa-aaaah-aq2la-cai"}
+              canisterId={"xhwud-7yaaa-aaaar-qbyqa-cai"}
               idlFactory={siwbIdl}
               httpAgentOptions={{ host: "https://icp0.io" }} // use only in local canister
             >

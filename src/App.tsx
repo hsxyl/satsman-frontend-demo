@@ -11,6 +11,7 @@ import { CreateLaunch } from "pages/CreateLaunch";
 import { useRee } from "@omnity/ree-client-ts-sdk";
 import { AllLaunch } from "pages/AllLaunch";
 import { UserProfile } from "pages/UserProfile";
+import { Admin } from "pages/Admin";
 
 function renderError({ error }: FallbackProps) {
   return <LoadingOrError error={error} />;
@@ -31,6 +32,7 @@ export function App() {
             <Route element={<Launch />} path="/launch/:pool_address" />
             <Route element={<AllLaunch />} path="/all_launch" />
             <Route element={<UserProfile />} path="/profile/:user_address" />
+            <Route element={<Admin />} path="admin" />
           </Routes>
           <ConnectWalletModal />
         </div>

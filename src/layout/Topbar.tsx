@@ -39,6 +39,9 @@ export function Topbar() {
           {/* <img src='/logo.png' alt='Logo' className='mx-6 h-20' /> */}
         </Link>
 
+<p>123</p>
+        
+
         <div className="mr-2">
           {address && identityAddress ? <AccountButton /> : <ConnectButton />}
         </div>

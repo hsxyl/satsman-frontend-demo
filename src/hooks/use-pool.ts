@@ -39,7 +39,7 @@ export function usePoolBlockStates(pool_address: string | undefined) {
       return await satsmanActor.get_launch_pool_block_states(pool_address);
     },
     enabled: !!pool_address,
-    refetchInterval: 60 * 1000, // Refetch every 60 seconds
+    refetchInterval: 300 * 1000, // Refetch every 5 minutes
   });
 }
 
@@ -118,6 +118,23 @@ export function useConfig() {
     },
     refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
   });
+}
+
+export function useBlockStates(
+  pool_address: string | undefined,
+) {
+  return useQuery({
+    queryKey: ["block-states", pool_address],
+    queryFn: async () => {
+      if (!pool_address) {
+        return undefined;
+      }
+      return await satsmanActor.get_launch_pool_block_states(pool_address);
+    },
+    enabled: !!pool_address,
+    refetchInterval: 600 * 1000, // Refetch every 10 minutes
+  });
+
 }
 
 export function useLaunchPool(pool_address: string | undefined) {

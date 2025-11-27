@@ -28,6 +28,7 @@ import {
   PoolBusinessStateView,
 } from "canister/satsman/service.did";
 import {
+  useBlockStates,
   useEtchingRequest,
   useGetPoolWithStateAndKey,
   useLaunchPool,
@@ -44,6 +45,8 @@ import { StarFilled } from "@ant-design/icons";
 import { Intention, OutputCoin, useRee } from "@omnity/ree-client-ts-sdk";
 import { convertUnspentOutputToUtxo } from "types";
 import { BITCOIN, RICHSWAP_EXCHANGE_ID } from "../constants";
+import ReactJson from 'react-json-view';
+
 
 export function Launch() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -122,8 +125,67 @@ export function Launch() {
           <EndUserTable pool_business_state={pool_business_state![0]!} />
         </div>
       )}
+
+      <p>fuck</p>
+
+      <BlockStateList pool_business_state={pool_business_state![0]!} />
     </div>
   );
+}
+
+function errorBlockState(
+    pool_business_state: PoolBusinessStateView,
+    block_state_list: BlockState[]
+) {
+  return block_state_list.filter((block_state) => {
+    let users = block_state.user_accounts.map((e) => e[1]);
+
+    let total_mint_rune_in_current_block = users.reduce((acc, user) => {
+      return acc + Number(user.minted_rune_in_current_block);
+    }, 0);
+
+    let rune_amount_per_block = Number(pool_business_state.rune_amount_for_launch) / pool_business_state.launch_plan.span_blocks; 
+
+
+    console.log({total_mint_rune_in_current_block, rune_amount_per_block, users });
+    if (total_mint_rune_in_current_block > rune_amount_per_block) {
+    console.log("error", {total_mint_rune_in_current_block, rune_amount_per_block});
+      
+      return true;
+    }
+  })
+
+}
+
+function BlockStateList(
+  {
+    pool_business_state,
+  }: {
+    pool_business_state: PoolBusinessStateView;
+  }
+) {
+  const pool_address = pool_business_state.pool_address;
+  const {data: block_states} = usePoolBlockStates(pool_address);
+
+  
+
+
+  return <div>
+    {block_states && 
+    // errorBlockState(pool_business_state, block_states!).map((block_state, index) => (
+      block_states!.map((block_state, index) => (
+        <div key={index} className="my-4 w-full max-w-2xl bg-white p-6 rounded shadow">
+          
+          <h1>{block_state.block_height}</h1>
+          <ReactJson src={block_state} />
+          
+        </div>
+      ))
+    }
+
+  </div>
+
+  
 }
 
 function PriceLineChart({ block_states }: { block_states: BlockState[] }) {
@@ -530,9 +592,9 @@ function UserManager({
     }
 
     const withdrawableSats =
-      (account?.sats_balance ?? BigInt(0)) -
-      (account?.total_paid_sats ?? BigInt(0)) +
-      BigInt(account?.total_referral_reward ?? 0);
+      Number(account?.sats_balance) -
+      Number(account?.total_paid_sats) +
+      Number(account?.total_referral_reward);
 
     if (withdrawableSats <= BigInt(0)) {
       return "No sats to claim.";
@@ -1079,12 +1141,6 @@ function LaunchSuccess({
                     // mergeSelfRuneBtcOutputs: true,
                   });
 
-                  // const tx = await createTransaction(
-                  //   {
-
-                  //   }
-                  // );
-
                   // execute add_lp on satsman canister
                   let intentiont1: Intention = {
                     exchangeId: SATSMAN_EXCHANGE_ID,
@@ -1158,35 +1214,15 @@ function LaunchSuccess({
 
                   const { psbt } = await tx.build();
 
+                console.log("Built psbt:", psbt.toBase64());
+
                   const res = await signPsbt(psbt.toBase64());
                   const signedPsbtHex = res!.signedPsbtHex!;
-                  console.log({
-                    intentiont1,
-                    intention2,
-                    psbt,
-                    signedPsbtHex,
-                  });
-                  const txid = await tx.send(signedPsbtHex);
+                 
+                  // const txid = await tx.send(signedPsbtHex);
 
                   alert("Distribute income Success: " + txid);
 
-                  // addLiquidityTx({
-                  //   userBtcUtxos: btcUtxos!.map((e) =>
-                  //     convertMaestroUtxo(e, paymentPublicKey)
-                  //   ),
-                  //   btcAmountForAddLiquidity:
-                  //     pool_business_state.btc_amount_for_lp,
-                  //   runeid: pool_business_state.rune_id[0]!,
-                  //   runeAmountForAddLiquidity:
-                  //     pool_business_state.rune_amount_for_lp,
-                  //   launchPoolUtxo: convertUtxo(pool_state.utxo, key),
-                  //   paymentAddress: paymentAddress,
-                  //   swapPoolAddress: launchSwapPool!.address,
-                  //   launchPoolAddress: pool_business_state.pool_address!,
-                  //   signPsbt: signPsbt,
-                  //   launchPoolNonce: BigInt(pool_state.nonce) + BigInt(1),
-                  //   swapPoolNonce: liquidityOffer.nonce,
-                  // });
                 } catch (e) {
                   console.log("Distribute income Error", e);
                   alert("Distribute income failed: " + (e as Error).message);
@@ -1248,9 +1284,10 @@ function LaunchSuccess({
       {launchSwapPool && (
         <div>
           <h2 className="text-xl font-semibold mb-2">Distribute Income</h2>
-          <p>Total Raised Amount: {last_block_state?.total_paid_sats}</p>
+          <p>User Total Paid Amount: {last_block_state?.total_paid_sats}</p>
+          <p>Total Raised Amount: {last_block_state?.total_auction_raised_amount}</p>
           <p>
-            Referral Reward Amount: {last_block_state?.total_referral_reward}
+            Total Referral Reward Amount: {last_block_state?.total_referral_reward}
           </p>
           <p>Total Exchange Fee: {last_block_state?.total_exchange_fee}</p>
           <p className="my-1">
@@ -1260,27 +1297,21 @@ function LaunchSuccess({
             Rune Amount for Lp: {pool_business_state.rune_amount_for_lp}
           </p>
           <p>
-            {income_distribution_total_percentage}
+            {pool_business_state.launch_plan.extract_auction_income_ratio}
             %(
-            {((last_block_state?.total_paid_sats ?? 0n) *
-              BigInt(income_distribution_total_percentage)) /
-              BigInt(100)}
-            ) income will be received by{" "}
+            {last_block_state?.total_auction_raised_amount}
+            ) 
+            income will be received by{" "}
             {pool_business_state.launch_plan.income_distribution.length}{" "}
             addresses
           </p>
-          {pool_business_state.launch_plan.income_distribution.map(
+          {pool_business_state.income_distribution_list.map(
             (item, index) => (
               <p key={index}>
                 {" "}
-                - {item.percentage}% (
-                {(
-                  (Number(last_block_state?.total_paid_sats ?? 0) *
-                    item.percentage) /
-                  100
-                ).toFixed()}
-                ) will be received by {shortenAddress(item.address)} (
-                {item.label})
+                -  (
+                { item[1]}
+                ) will be received by {shortenAddress(item[0])}
               </p>
             )
           )}

@@ -16,6 +16,7 @@ import { useRee } from "@omnity/ree-client-ts-sdk";
 
 export const connectWalletModalOpenAtom = atom(false);
 
+
 export default function ConnectWalletModal() {
   const [connectWalletModalOpen, setConnectWalletModalOpen] = useAtom(
     connectWalletModalOpenAtom
@@ -48,6 +49,8 @@ export default function ConnectWalletModal() {
   const [loading, setLoading] = useState<boolean>(false);
   const [manually, setManually] = useState<boolean>(false);
 
+  console.log({ identity, connectedBtcAddress, address });
+
   /**
    * Preload a Siwb message on every address change.
    */
@@ -56,7 +59,7 @@ export default function ConnectWalletModal() {
     // setLaserEyes(p)
     const address = getAddress();
     const pubkey = getPublicKey();
-    console.log({ address, pubkey, identityPublicKey, connectedBtcAddress });
+    console.log("siwb", { address, pubkey, identityPublicKey, connectedBtcAddress });
 
     if (address) {
       console.log({
